@@ -13,7 +13,7 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
-  const { stats, holdings, refreshPrices, apiKey } = usePortfolioContext();
+  const { stats, holdings, refreshPrices, apiKey, exchangeRate } = usePortfolioContext();
   const [allocationType, setAllocationType] = React.useState<'symbol' | 'broker'>('symbol');
   const [brokerFilter, setBrokerFilter] = React.useState<'all' | Broker>('all');
   const [isRefreshing, setIsRefreshing] = React.useState(false);
@@ -30,7 +30,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
     return holdings.filter(h => h.broker === brokerFilter);
   }, [holdings, brokerFilter]);
 
-  // Calculate filtered stats
+  // Calculate filtered stats in TWD
   const filteredStats = React.useMemo(() => {
     let totalValue = 0;
     let totalCost = 0;
@@ -39,17 +39,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
 
     filteredHoldings.forEach((h) => {
       const price = h.currentPrice || h.avgCost;
-      const value = h.shares * price;
-      const cost = h.shares * h.avgCost;
+      let value = h.shares * price;
+      let cost = h.shares * h.avgCost;
+      let dayChange = h.dayChange || 0;
+
+      // Convert USD to TWD for non-TW brokers (FubonSub, Firstrade)
+      if (h.broker !== 'FubonTW') {
+        value *= exchangeRate;
+        cost *= exchangeRate;
+        dayChange *= exchangeRate;
+      }
 
       totalValue += value;
       totalCost += cost;
       totalUnrealizedPL += (value - cost);
-
-      // Sum up day changes from each holding
-      if (h.dayChange !== undefined) {
-        totalDayChange += h.dayChange;
-      }
+      totalDayChange += dayChange;
     });
 
     const totalDayChangePercent = (totalValue - totalDayChange) > 0
@@ -64,18 +68,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
       totalDayChange,
       totalDayChangePercent,
     };
-  }, [filteredHoldings]);
+  }, [filteredHoldings, exchangeRate]);
 
   const allocationData = React.useMemo(() => {
     if (allocationType === 'symbol') {
-      return filteredHoldings.map(h => ({
-        name: h.symbol,
-        value: h.shares * (h.currentPrice || h.avgCost),
-      })).sort((a, b) => b.value - a.value);
+      return filteredHoldings.map(h => {
+        let value = h.shares * (h.currentPrice || h.avgCost);
+        // Convert to TWD for chart consistency
+        if (h.broker !== 'FubonTW') {
+          value *= exchangeRate;
+        }
+        return {
+          name: h.symbol,
+          value: value,
+        };
+      }).sort((a, b) => b.value - a.value);
     } else {
       const brokerMap = new Map<string, number>();
       filteredHoldings.forEach(h => {
-        const value = h.shares * (h.currentPrice || h.avgCost);
+        let value = h.shares * (h.currentPrice || h.avgCost);
+        // Convert to TWD for chart consistency
+        if (h.broker !== 'FubonTW') {
+          value *= exchangeRate;
+        }
         brokerMap.set(h.broker, (brokerMap.get(h.broker) || 0) + value);
       });
       return Array.from(brokerMap.entries()).map(([name, value]) => ({
@@ -83,7 +98,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
         value
       })).sort((a, b) => b.value - a.value);
     }
-  }, [filteredHoldings, allocationType]);
+  }, [filteredHoldings, allocationType, exchangeRate]);
 
   const SummaryItem = ({ label, value, subValue, color = '#d1d4dc' }: any) => (
     <div className="flex flex-col">
@@ -126,8 +141,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
       <div className="bg-[#1e222d] border border-[#2a2e39] p-6 rounded flex items-center justify-between shadow-sm">
         <div className="flex gap-12">
           <SummaryItem
-            label="Total Assets"
-            value={`$${filteredStats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            label="Total Assets (TWD)"
+            value={`$${filteredStats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
             color="#d1d4dc"
           />
           <SummaryItem
@@ -137,11 +152,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
             color={filteredStats.totalDayChange >= 0 ? '#00b498' : '#e22a19'}
           />
           <SummaryItem
-            label="Total P/L"
-            value={`${filteredStats.totalUnrealizedPL >= 0 ? '+' : '-'}$${Math.abs(filteredStats.totalUnrealizedPL).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            label="Total P/L (TWD)"
+            value={`${filteredStats.totalUnrealizedPL >= 0 ? '+' : '-'}$${Math.abs(filteredStats.totalUnrealizedPL).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
             subValue={`(${filteredStats.totalUnrealizedPLPercent.toFixed(2)}%)`}
             color={filteredStats.totalUnrealizedPL >= 0 ? '#00b498' : '#e22a19'}
           />
+          <div className="flex flex-col">
+            <span className="text-[#787b86] text-xs font-medium uppercase tracking-wide mb-1">USD/TWD</span>
+            <span className="text-lg font-bold font-mono tracking-tight text-[#d1d4dc]">{exchangeRate.toFixed(2)}</span>
+          </div>
         </div>
         <div className="flex gap-2">
           {apiKey && (

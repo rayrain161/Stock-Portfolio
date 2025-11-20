@@ -3,7 +3,7 @@ import type { Transaction, Holding, PortfolioStats, RealizedPosition } from '../
 
 const STORAGE_KEY = 'stock_position_transactions';
 
-export const usePortfolio = () => {
+export const usePortfolio = (exchangeRate: number = 31.25) => {
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? JSON.parse(saved) : [];

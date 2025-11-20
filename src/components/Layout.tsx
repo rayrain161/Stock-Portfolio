@@ -95,7 +95,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
       </header>
 
       {/* Main Content */}
-      <main className="p-6 max-w-[1800px] mx-auto h-[calc(100vh-3.5rem)] overflow-hidden">
+      <main className="p-6 max-w-[1800px] mx-auto h-[calc(100vh-3.5rem)] overflow-auto">
         {children}
       </main>
 

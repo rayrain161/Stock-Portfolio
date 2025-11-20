@@ -1,13 +1,15 @@
 import React, { useState, forwardRef } from 'react';
 import { usePortfolioContext } from '../context/PortfolioContext';
 import type { Broker, TransactionType, Currency } from '../types';
-import { Plus, Save, X } from 'lucide-react';
+import { CsvImporter } from './CsvImporter';
+import { Plus, Save, X, Upload } from 'lucide-react';
 import { clsx } from 'clsx';
 import { calculateFee } from '../utils/calculations';
 
 export const TransactionForm = forwardRef<HTMLButtonElement>((_, ref) => {
   const { addTransaction } = usePortfolioContext();
   const [isOpen, setIsOpen] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -66,14 +68,24 @@ export const TransactionForm = forwardRef<HTMLButtonElement>((_, ref) => {
 
   if (!isOpen) {
     return (
-      <button
-        ref={ref}
-        onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 px-4 py-2 bg-[#2962ff] hover:bg-[#1e53dc] text-white rounded font-medium transition-colors text-sm"
-      >
-        <Plus className="w-4 h-4" />
-        Add Transaction
-      </button>
+      <div className="flex gap-3">
+        <button
+          ref={ref}
+          onClick={() => setIsOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-[#2962ff] hover:bg-[#1e53dc] text-white rounded font-medium transition-colors text-sm"
+        >
+          <Plus className="w-4 h-4" />
+          Add Transaction
+        </button>
+        <button
+          onClick={() => setShowImport(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-[#2a2e39] hover:bg-[#363a45] text-[#d1d4dc] rounded font-medium transition-colors text-sm border border-[#434651]"
+        >
+          <Upload className="w-4 h-4" />
+          Import CSV
+        </button>
+        {showImport && <CsvImporter onClose={() => setShowImport(false)} />}
+      </div>
     );
   }
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { Transaction, Holding, PortfolioStats, RealizedPosition } from '../types';
 
+const API_URL = 'http://localhost:3001/api/transactions';
 const STORAGE_KEY = 'stock_position_transactions';
 
 interface PriceInfo {
@@ -9,23 +10,148 @@ interface PriceInfo {
 }
 
 export const usePortfolio = () => {
-  const [transactions, setTransactions] = useState<Transaction[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : [];
-  });
-
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [prices, setPrices] = useState<Record<string, PriceInfo>>({});
 
+  // Fetch transactions from API on mount and migrate if needed
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
-  }, [transactions]);
+    const fetchAndMigrate = async () => {
+      try {
+        // 1. Fetch from Server
+        const response = await fetch(API_URL);
+        let serverData: Transaction[] = [];
 
-  const addTransaction = (transaction: Transaction) => {
-    setTransactions((prev) => [...prev, transaction]);
+        if (response.ok) {
+          serverData = await response.json();
+          setTransactions(serverData);
+        } else {
+          console.error('Failed to fetch transactions');
+          return;
+        }
+
+        // 2. Check for LocalStorage Data (Legacy)
+        const localDataString = localStorage.getItem(STORAGE_KEY);
+        if (localDataString) {
+          const localData: Transaction[] = JSON.parse(localDataString);
+
+          // 3. If Server is empty but Local has data -> MIGRATE
+          if (serverData.length === 0 && localData.length > 0) {
+            console.log('Found legacy data in LocalStorage. Migrating to Server...');
+
+            for (const txn of localData) {
+              await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(txn),
+              });
+            }
+
+            // Refresh state after migration
+            const newResponse = await fetch(API_URL);
+            if (newResponse.ok) {
+              const newData = await newResponse.json();
+              setTransactions(newData);
+              console.log('Migration successful! Legacy data saved to server.');
+
+              // Optional: Rename key to avoid re-migration, or keep as backup
+              // localStorage.setItem(STORAGE_KEY + '_migrated', localDataString);
+              // localStorage.removeItem(STORAGE_KEY); 
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching/migrating transactions:', error);
+      }
+    };
+
+    fetchAndMigrate();
+  }, []);
+
+  const addTransaction = async (transaction: Transaction) => {
+    console.log('addTransaction called with:', transaction);
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(transaction),
+      });
+
+      console.log('Server response status:', response.status);
+
+      if (response.ok) {
+        const savedTransaction = await response.json();
+        console.log('Transaction saved, updating state:', savedTransaction);
+        setTransactions((prev) => [...prev, savedTransaction]);
+      } else {
+        console.error('Failed to save transaction');
+      }
+    } catch (error) {
+      console.error('Error saving transaction:', error);
+    }
   };
 
-  const deleteTransaction = (id: string) => {
-    setTransactions((prev) => prev.filter((t) => t.id !== id));
+  const addTransactions = async (newTransactions: Transaction[]) => {
+    try {
+      const savedTransactions: Transaction[] = [];
+
+      // Process sequentially to avoid race conditions on the server file write
+      for (const transaction of newTransactions) {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(transaction),
+        });
+
+        if (response.ok) {
+          const saved = await response.json();
+          savedTransactions.push(saved);
+        } else {
+          console.error('Failed to save transaction:', transaction);
+        }
+      }
+
+      if (savedTransactions.length > 0) {
+        setTransactions((prev) => [...prev, ...savedTransactions]);
+      }
+    } catch (error) {
+      console.error('Error saving transactions:', error);
+    }
+  };
+
+  const deleteTransaction = async (id: string) => {
+    try {
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setTransactions((prev) => prev.filter((t) => t.id !== id));
+      } else {
+        console.error('Failed to delete transaction');
+      }
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+    }
+  };
+
+  const clearAllTransactions = async () => {
+    try {
+      const response = await fetch(API_URL, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setTransactions([]);
+      } else {
+        console.error('Failed to clear transactions');
+      }
+    } catch (error) {
+      console.error('Error clearing transactions:', error);
+    }
   };
 
   const updatePrice = (symbol: string, current: number, previousClose?: number) => {
@@ -198,7 +324,9 @@ export const usePortfolio = () => {
   return {
     transactions,
     addTransaction,
+    addTransactions,
     deleteTransaction,
+    clearAllTransactions,
     updatePrice,
     holdings: calculatedHoldings,
     realizedPositions,

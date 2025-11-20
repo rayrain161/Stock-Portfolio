@@ -1,12 +1,49 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { usePortfolioContext } from '../context/PortfolioContext';
+import { clsx } from 'clsx';
+import type { Broker } from '../types';
 
 export const RealizedGains: React.FC = () => {
-  const { realizedPositions } = usePortfolioContext();
+  const { realizedPositions, exchangeRate } = usePortfolioContext();
+  const [brokerFilter, setBrokerFilter] = useState<'all' | Broker>('all');
+
+  // Filter and convert positions
+  const filteredPositions = useMemo(() => {
+    let positions = realizedPositions;
+
+    if (brokerFilter !== 'all') {
+      positions = positions.filter(p => p.broker === brokerFilter);
+    }
+
+    // Apply currency conversion if needed
+    return positions.map(p => {
+      // If viewing ALL, convert non-TW to TWD
+      // If viewing specific USD broker, keep in USD
+      // If viewing TW broker, keep in TWD
+      let conversionRate = 1;
+
+      if (brokerFilter === 'all' && p.broker !== 'FubonTW') {
+        conversionRate = exchangeRate;
+      }
+
+      if (conversionRate === 1) return p;
+
+      return {
+        ...p,
+        acquisitionPrice: p.acquisitionPrice * conversionRate,
+        acquisitionFee: p.acquisitionFee * conversionRate,
+        salePrice: p.salePrice * conversionRate,
+        saleFee: p.saleFee * conversionRate,
+        adjustedCost: p.adjustedCost * conversionRate,
+        salesProceeds: p.salesProceeds * conversionRate,
+        netGainLoss: p.netGainLoss * conversionRate,
+      };
+    });
+  }, [realizedPositions, brokerFilter, exchangeRate]);
 
   // Calculate summary stats
-  const shortTermPositions = realizedPositions.filter(p => p.isShortTerm);
-  const longTermPositions = realizedPositions.filter(p => !p.isShortTerm);
+  const shortTermPositions = filteredPositions.filter(p => p.isShortTerm);
+  const longTermPositions = filteredPositions.filter(p => !p.isShortTerm);
 
   const shortTermStats = shortTermPositions.reduce((acc, p) => ({
     salesProceeds: acc.salesProceeds + p.salesProceeds,
@@ -38,11 +75,40 @@ export const RealizedGains: React.FC = () => {
     return new Date(date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
   };
 
+  const currencyLabel = (brokerFilter === 'FubonSub' || brokerFilter === 'Firstrade') ? 'USD' : 'TWD';
+
   return (
     <div className="flex flex-col gap-6 h-full">
+      {/* Broker Filter Tabs */}
+      <div className="bg-[#1e222d] border border-[#2a2e39] rounded p-2">
+        <div className="flex gap-2">
+          {[
+            { id: 'all', label: '全部' },
+            { id: 'FubonTW', label: '台股' },
+            { id: 'FubonSub', label: '複委託' },
+            { id: 'Firstrade', label: 'Firstrade' },
+          ].map((filter) => (
+            <button
+              key={filter.id}
+              onClick={() => setBrokerFilter(filter.id as 'all' | Broker)}
+              className={clsx(
+                'flex-1 px-4 py-2 text-sm font-medium rounded transition-colors',
+                brokerFilter === filter.id
+                  ? 'bg-[#2962ff] text-white'
+                  : 'text-[#787b86] hover:bg-[#2a2e39] hover:text-[#d1d4dc]'
+              )}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Summary Section */}
       <div className="bg-[#1e222d] border border-[#2a2e39] rounded p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-[#d1d4dc] mb-4">Realized Gain/Loss Summary</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold text-[#d1d4dc]">Realized Gain/Loss Summary ({currencyLabel})</h2>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Short Term */}
@@ -131,14 +197,14 @@ export const RealizedGains: React.FC = () => {
               </tr>
             </thead>
             <tbody className="text-[#d1d4dc] font-mono">
-              {realizedPositions.length === 0 ? (
+              {filteredPositions.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="text-center py-8 text-[#787b86]">
-                    No realized gains/losses yet
+                    No realized gains/losses found
                   </td>
                 </tr>
               ) : (
-                realizedPositions.map((position, index) => (
+                filteredPositions.map((position, index) => (
                   <tr key={index} className="border-b border-[#2a2e39] hover:bg-[#131722] transition-colors">
                     <td className="px-3 py-2 font-semibold">{position.symbol}</td>
                     <td className="px-3 py-2 text-[#787b86]">{position.broker}</td>

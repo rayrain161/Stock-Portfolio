@@ -8,7 +8,9 @@ import { fetchQuoteYahoo } from '../services/yahoo';
 interface PortfolioContextType {
   transactions: Transaction[];
   addTransaction: (t: Transaction) => void;
+  addTransactions: (ts: Transaction[]) => Promise<void>;
   deleteTransaction: (id: string) => void;
+  clearAllTransactions: () => Promise<void>;
   holdings: Holding[];
   realizedPositions: RealizedPosition[];
   stats: PortfolioStats;

@@ -5,6 +5,7 @@ import { clsx } from 'clsx';
 
 export const TransactionHistory: React.FC = () => {
   const { transactions, deleteTransaction } = usePortfolioContext();
+  console.log('TransactionHistory render:', { transactionCount: transactions.length, transactions });
 
   if (transactions.length === 0) {
     return (

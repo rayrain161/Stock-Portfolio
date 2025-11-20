@@ -30,7 +30,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
     return holdings.filter(h => h.broker === brokerFilter);
   }, [holdings, brokerFilter]);
 
-  // Calculate filtered stats in TWD
+  // Calculate filtered stats
   const filteredStats = React.useMemo(() => {
     let totalValue = 0;
     let totalCost = 0;
@@ -43,8 +43,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
       let cost = h.shares * h.avgCost;
       let dayChange = h.dayChange || 0;
 
-      // Convert USD to TWD for non-TW brokers (FubonSub, Firstrade)
-      if (h.broker !== 'FubonTW') {
+      // Convert USD to TWD only if we are viewing ALL assets (to aggregate)
+      // If viewing specific USD broker (FubonSub, Firstrade), keep in USD
+      if (brokerFilter === 'all' && h.broker !== 'FubonTW') {
         value *= exchangeRate;
         cost *= exchangeRate;
         dayChange *= exchangeRate;
@@ -68,13 +69,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
       totalDayChange,
       totalDayChangePercent,
     };
-  }, [filteredHoldings, exchangeRate]);
+  }, [filteredHoldings, exchangeRate, brokerFilter]);
 
   const allocationData = React.useMemo(() => {
     if (allocationType === 'symbol') {
       return filteredHoldings.map(h => {
         let value = h.shares * (h.currentPrice || h.avgCost);
-        // Convert to TWD for chart consistency
+        // Always convert to TWD for allocation chart to show relative size correctly
         if (h.broker !== 'FubonTW') {
           value *= exchangeRate;
         }
@@ -87,7 +88,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
       const brokerMap = new Map<string, number>();
       filteredHoldings.forEach(h => {
         let value = h.shares * (h.currentPrice || h.avgCost);
-        // Convert to TWD for chart consistency
+        // Always convert to TWD for allocation chart
         if (h.broker !== 'FubonTW') {
           value *= exchangeRate;
         }
@@ -109,6 +110,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
       </div>
     </div>
   );
+
+  const currencyLabel = (brokerFilter === 'FubonSub' || brokerFilter === 'Firstrade') ? 'USD' : 'TWD';
 
   return (
     <div className="flex flex-col gap-6 h-full">
@@ -141,8 +144,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
       <div className="bg-[#1e222d] border border-[#2a2e39] p-6 rounded flex items-center justify-between shadow-sm">
         <div className="flex gap-12">
           <SummaryItem
-            label="Total Assets (TWD)"
-            value={`$${filteredStats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+            label={`Total Assets (${currencyLabel})`}
+            value={`$${filteredStats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             color="#d1d4dc"
           />
           <SummaryItem
@@ -152,8 +155,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
             color={filteredStats.totalDayChange >= 0 ? '#00b498' : '#e22a19'}
           />
           <SummaryItem
-            label="Total P/L (TWD)"
-            value={`${filteredStats.totalUnrealizedPL >= 0 ? '+' : '-'}$${Math.abs(filteredStats.totalUnrealizedPL).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+            label={`Total P/L (${currencyLabel})`}
+            value={`${filteredStats.totalUnrealizedPL >= 0 ? '+' : '-'}$${Math.abs(filteredStats.totalUnrealizedPL).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             subValue={`(${filteredStats.totalUnrealizedPLPercent.toFixed(2)}%)`}
             color={filteredStats.totalUnrealizedPL >= 0 ? '#00b498' : '#e22a19'}
           />

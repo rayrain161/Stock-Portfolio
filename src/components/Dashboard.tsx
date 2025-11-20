@@ -2,6 +2,7 @@ import React from 'react';
 import { usePortfolioContext } from '../context/PortfolioContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { HoldingsTable } from './HoldingsTable';
+import { HistoricalAnalysis } from './HistoricalAnalysis';
 import { clsx } from 'clsx';
 import { RefreshCw } from 'lucide-react';
 import type { Broker } from '../types';
@@ -187,6 +188,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
         </div>
       </div>
 
+
       <div className="grid grid-cols-12 gap-6 flex-1 min-h-0">
         {/* Holdings List (Left/Main) */}
         <div className="col-span-12 lg:col-span-8 flex flex-col min-h-0">
@@ -271,6 +273,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
               )}
             </div>
           </div>
+
+          {/* Historical Analysis */}
+          <HistoricalAnalysis />
         </div>
       </div>
     </div>

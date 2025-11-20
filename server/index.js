@@ -81,6 +81,57 @@ app.delete('/api/transactions/:id', async (req, res) => {
   }
 });
 
+// GET history from CSV
+app.get('/api/history', async (req, res) => {
+  try {
+    const csvPath = path.join(__dirname, 'record.csv');
+    const data = await fs.readFile(csvPath, 'utf8');
+
+    // Parse CSV
+    const lines = data.split('\n');
+    const headers = lines[0].split(',').map(h => h.trim());
+    const result = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      const values = line.split(',');
+      const entry = {};
+
+      // Map relevant columns
+      // 0: Date
+      // 1: TW Market Value
+      // 2: TW Cost
+      // 4: TW P/L Rate
+      // 9: US Market Value (USD)
+      // 10: US Cost (USD)
+      // 12: US P/L Rate
+      // 16: Total P/L Rate
+
+      if (values[0]) {
+        entry.date = values[0];
+        entry.twMarketValue = parseFloat(values[1]) || 0;
+        entry.twCost = parseFloat(values[2]) || 0;
+        entry.twPLRate = parseFloat(values[4]?.replace('%', '')) || 0;
+
+        entry.usMarketValueUSD = parseFloat(values[9]) || 0;
+        entry.usCostUSD = parseFloat(values[10]) || 0;
+        entry.usPLRate = parseFloat(values[12]?.replace('%', '')) || 0;
+
+        entry.totalPLRate = parseFloat(values[16]?.replace('%', '')) || 0;
+
+        result.push(entry);
+      }
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error reading history CSV:', error);
+    res.status(500).json({ error: 'Failed to read history data' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

@@ -15,6 +15,8 @@ interface PortfolioContextType {
   apiKey: string;
   setApiKey: (key: string) => void;
   refreshPrices: () => Promise<void>;
+  exchangeRate: number;
+  setExchangeRate: (rate: number) => void;
 }
 
 const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined);
@@ -22,13 +24,29 @@ const PortfolioContext = createContext<PortfolioContextType | undefined>(undefin
 export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const portfolio = usePortfolio();
   const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem('finnhub_api_key') || '');
+  const [exchangeRate, setExchangeRate] = useState<number>(() => {
+    const saved = localStorage.getItem('usd_twd_rate');
+    return saved ? parseFloat(saved) : 31.5; // Default TWD/USD rate
+  });
 
   useEffect(() => {
     localStorage.setItem('finnhub_api_key', apiKey);
   }, [apiKey]);
 
+  useEffect(() => {
+    localStorage.setItem('usd_twd_rate', exchangeRate.toString());
+  }, [exchangeRate]);
+
   const refreshPrices = async () => {
     const symbols = Array.from(new Set(portfolio.holdings.map(h => h.symbol)));
+
+    // Fetch USD/TWD exchange rate
+    console.log('Fetching USD/TWD exchange rate...');
+    const rateData = await fetchQuoteYahoo('TWD=X');
+    if (rateData?.current) {
+      setExchangeRate(rateData.current);
+      console.log(`Exchange rate updated: 1 USD = ${rateData.current} TWD`);
+    }
 
     await Promise.all(symbols.map(async (symbol) => {
       let current: number | null = null;
@@ -86,7 +104,7 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
   }, [apiKey]); // Depend on apiKey so it runs when key is set
 
   return (
-    <PortfolioContext.Provider value={{ ...portfolio, apiKey, setApiKey, refreshPrices }}>
+    <PortfolioContext.Provider value={{ ...portfolio, apiKey, setApiKey, refreshPrices, exchangeRate, setExchangeRate }}>
       {children}
     </PortfolioContext.Provider>
   );

@@ -34,7 +34,10 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
       let current: number | null = null;
       let previousClose: number | undefined;
 
-      const isTwStock = /^\d{4}$/.test(symbol);
+      // Taiwan stocks can be 4-6 digits (e.g., 2330, 0050, 00878, 006208)
+      const isTwStock = /^\d{4,6}$/.test(symbol);
+
+      console.log(`[refreshPrices] symbol="${symbol}", isTwStock=${isTwStock}, length=${symbol.length}`);
 
       if (apiKey) {
         const fetchSymbol = isTwStock ? `${symbol}.TW` : symbol;

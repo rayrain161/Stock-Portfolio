@@ -35,18 +35,37 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
       let previousClose: number | undefined;
 
       const isTwStock = /^\d{4}$/.test(symbol);
-      const fetchSymbol = isTwStock ? `${symbol}.TW` : symbol;
 
       if (apiKey) {
+        const fetchSymbol = isTwStock ? `${symbol}.TW` : symbol;
         current = await fetchQuote(fetchSymbol, apiKey);
       }
 
       if (current === null) {
-        console.log(`Attempting to fetch ${fetchSymbol} from Yahoo Finance...`);
-        const yahooData = await fetchQuoteYahoo(fetchSymbol);
-        if (yahooData) {
-          current = yahooData.current;
-          previousClose = yahooData.previousClose;
+        // Try Yahoo Finance with different suffixes for Taiwan stocks
+        if (isTwStock) {
+          // Try .TW first
+          console.log(`Attempting to fetch ${symbol}.TW from Yahoo Finance...`);
+          let yahooData = await fetchQuoteYahoo(`${symbol}.TW`);
+
+          // If .TW fails, try .TWO (for OTC stocks)
+          if (!yahooData) {
+            console.log(`${symbol}.TW not found, trying ${symbol}.TWO...`);
+            yahooData = await fetchQuoteYahoo(`${symbol}.TWO`);
+          }
+
+          if (yahooData) {
+            current = yahooData.current;
+            previousClose = yahooData.previousClose;
+          }
+        } else {
+          // For non-Taiwan stocks, use symbol as-is
+          console.log(`Attempting to fetch ${symbol} from Yahoo Finance...`);
+          const yahooData = await fetchQuoteYahoo(symbol);
+          if (yahooData) {
+            current = yahooData.current;
+            previousClose = yahooData.previousClose;
+          }
         }
       }
 

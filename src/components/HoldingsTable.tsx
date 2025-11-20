@@ -1,9 +1,15 @@
 import React from 'react';
 import { usePortfolioContext } from '../context/PortfolioContext';
 import { clsx } from 'clsx';
+import type { Holding } from '../types';
 
-export const HoldingsTable: React.FC = () => {
-  const { holdings } = usePortfolioContext();
+interface HoldingsTableProps {
+  holdings?: Holding[];
+}
+
+export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings: propHoldings }) => {
+  const { holdings: contextHoldings } = usePortfolioContext();
+  const holdings = propHoldings || contextHoldings;
 
   if (holdings.length === 0) {
     return (

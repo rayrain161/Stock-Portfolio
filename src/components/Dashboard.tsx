@@ -4,6 +4,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 import { HoldingsTable } from './HoldingsTable';
 import { clsx } from 'clsx';
 import { RefreshCw } from 'lucide-react';
+import type { Broker } from '../types';
 
 const COLORS = ['#2962ff', '#e22a19', '#00b498', '#f59e0b', '#8b5cf6', '#ec4899', '#6366f1'];
 
@@ -14,6 +15,7 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
   const { stats, holdings, refreshPrices, apiKey } = usePortfolioContext();
   const [allocationType, setAllocationType] = React.useState<'symbol' | 'broker'>('symbol');
+  const [brokerFilter, setBrokerFilter] = React.useState<'all' | Broker>('all');
   const [isRefreshing, setIsRefreshing] = React.useState(false);
 
   const handleRefresh = async () => {
@@ -22,15 +24,45 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
     setIsRefreshing(false);
   };
 
+  // Filter holdings based on selected broker
+  const filteredHoldings = React.useMemo(() => {
+    if (brokerFilter === 'all') return holdings;
+    return holdings.filter(h => h.broker === brokerFilter);
+  }, [holdings, brokerFilter]);
+
+  // Calculate filtered stats
+  const filteredStats = React.useMemo(() => {
+    let totalValue = 0;
+    let totalCost = 0;
+    let totalUnrealizedPL = 0;
+
+    filteredHoldings.forEach((h) => {
+      const price = h.currentPrice || h.avgCost;
+      const value = h.shares * price;
+      const cost = h.shares * h.avgCost;
+
+      totalValue += value;
+      totalCost += cost;
+      totalUnrealizedPL += (value - cost);
+    });
+
+    return {
+      totalValue,
+      totalCost,
+      totalUnrealizedPL,
+      totalUnrealizedPLPercent: totalCost > 0 ? (totalUnrealizedPL / totalCost) * 100 : 0,
+    };
+  }, [filteredHoldings]);
+
   const allocationData = React.useMemo(() => {
     if (allocationType === 'symbol') {
-      return holdings.map(h => ({
+      return filteredHoldings.map(h => ({
         name: h.symbol,
         value: h.shares * (h.currentPrice || h.avgCost),
       })).sort((a, b) => b.value - a.value);
     } else {
       const brokerMap = new Map<string, number>();
-      holdings.forEach(h => {
+      filteredHoldings.forEach(h => {
         const value = h.shares * (h.currentPrice || h.avgCost);
         brokerMap.set(h.broker, (brokerMap.get(h.broker) || 0) + value);
       });
@@ -39,7 +71,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
         value
       })).sort((a, b) => b.value - a.value);
     }
-  }, [holdings, allocationType]);
+  }, [filteredHoldings, allocationType]);
 
   const SummaryItem = ({ label, value, subValue, color = '#d1d4dc' }: any) => (
     <div className="flex flex-col">
@@ -53,12 +85,37 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
 
   return (
     <div className="flex flex-col gap-6 h-full">
+      {/* Broker Filter Tabs */}
+      <div className="bg-[#1e222d] border border-[#2a2e39] rounded p-2">
+        <div className="flex gap-2">
+          {[
+            { id: 'all', label: '全部' },
+            { id: 'FubonTW', label: '台股' },
+            { id: 'FubonSub', label: '複委託' },
+            { id: 'Firstrade', label: 'Firstrade' },
+          ].map((filter) => (
+            <button
+              key={filter.id}
+              onClick={() => setBrokerFilter(filter.id as 'all' | Broker)}
+              className={clsx(
+                'flex-1 px-4 py-2 text-sm font-medium rounded transition-colors',
+                brokerFilter === filter.id
+                  ? 'bg-[#2962ff] text-white'
+                  : 'text-[#787b86] hover:bg-[#2a2e39] hover:text-[#d1d4dc]'
+              )}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Summary Strip */}
       <div className="bg-[#1e222d] border border-[#2a2e39] p-6 rounded flex items-center justify-between shadow-sm">
         <div className="flex gap-12">
           <SummaryItem
             label="Total Assets"
-            value={`$${stats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            value={`$${filteredStats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             color="#d1d4dc"
           />
           <SummaryItem
@@ -69,9 +126,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
           />
           <SummaryItem
             label="Total P/L"
-            value={`$${Math.abs(stats.totalUnrealizedPL).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-            subValue={`(${((Math.abs(stats.totalUnrealizedPL) / (stats.totalCost || 1)) * 100).toFixed(2)}%)`}
-            color={stats.totalUnrealizedPL >= 0 ? '#00b498' : '#e22a19'}
+            value={`${filteredStats.totalUnrealizedPL >= 0 ? '+' : '-'}$${Math.abs(filteredStats.totalUnrealizedPL).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            subValue={`(${filteredStats.totalUnrealizedPLPercent.toFixed(2)}%)`}
+            color={filteredStats.totalUnrealizedPL >= 0 ? '#00b498' : '#e22a19'}
           />
         </div>
         <div className="flex gap-2">
@@ -104,7 +161,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
               <h3 className="text-[#d1d4dc] font-medium">Account Positions</h3>
             </div>
             <div className="flex-1 overflow-auto">
-              <HoldingsTable />
+              <HoldingsTable holdings={filteredHoldings} />
             </div>
           </div>
         </div>
@@ -167,7 +224,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
                     <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle">
                       <tspan x="50%" dy="-1em" fontSize="12" fill="#787b86">Total Assets</tspan>
                       <tspan x="50%" dy="1.5em" fontSize="18" fontWeight="bold" fill="#d1d4dc">
-                        ${stats.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        ${filteredStats.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                       </tspan>
                     </text>
                   </PieChart>

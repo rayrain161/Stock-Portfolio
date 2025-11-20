@@ -47,6 +47,8 @@ export interface Holding {
   unrealizedPL: number;
   unrealizedPLPercent: number;
   currency?: Currency; // Optional for backwards compatibility
+  dayChange?: number; // Daily price change in dollars
+  dayChangePercent?: number; // Daily price change in percentage
 }
 
 export interface PortfolioStats {

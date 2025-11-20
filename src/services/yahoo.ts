@@ -1,5 +1,4 @@
-export const fetchQuoteYahoo = async (symbol: string): Promise<number | null> => {
-  // Use the local proxy configured in vite.config.ts
+export const fetchQuoteYahoo = async (symbol: string): Promise<{ current: number; previousClose?: number } | null> => {
   const url = `/api/yahoo/v8/finance/chart/${symbol}`;
 
   try {
@@ -9,11 +8,12 @@ export const fetchQuoteYahoo = async (symbol: string): Promise<number | null> =>
     }
     const json = await response.json();
 
-    // Parse the response based on the user's snippet structure
-    // json.chart.result[0].meta.regularMarketPrice
     const result = json.chart?.result?.[0];
     if (result?.meta?.regularMarketPrice) {
-      return result.meta.regularMarketPrice;
+      return {
+        current: result.meta.regularMarketPrice,
+        previousClose: result.meta.previousClose,
+      };
     }
     return null;
   } catch (error) {

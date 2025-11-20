@@ -3,13 +3,18 @@ import type { Transaction, Holding, PortfolioStats, RealizedPosition } from '../
 
 const STORAGE_KEY = 'stock_position_transactions';
 
+interface PriceInfo {
+  current: number;
+  previousClose?: number;
+}
+
 export const usePortfolio = () => {
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [prices, setPrices] = useState<Record<string, number>>({});
+  const [prices, setPrices] = useState<Record<string, PriceInfo>>({});
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
@@ -23,8 +28,8 @@ export const usePortfolio = () => {
     setTransactions((prev) => prev.filter((t) => t.id !== id));
   };
 
-  const updatePrice = (symbol: string, price: number) => {
-    setPrices((prev) => ({ ...prev, [symbol]: price }));
+  const updatePrice = (symbol: string, current: number, previousClose?: number) => {
+    setPrices((prev) => ({ ...prev, [symbol]: { current, previousClose } }));
   };
 
   // Calculate holdings and realized gains using FIFO
@@ -123,13 +128,41 @@ export const usePortfolio = () => {
 
     const calculatedHoldings: Holding[] = Object.values(holdingsMap)
       .filter((h) => h.totalShares > 0)
-      .map((h) => ({
-        symbol: h.symbol,
-        broker: h.broker as any,
-        shares: h.totalShares,
-        avgCost: h.totalCost / h.totalShares,
-        currentPrice: prices[h.symbol],
-      }));
+      .map((h) => {
+        const priceInfo = prices[h.symbol];
+        const currentPrice = priceInfo?.current;
+        const previousClose = priceInfo?.previousClose;
+
+        // Calculate day change if we have both current and previous prices
+        let dayChange: number | undefined;
+        let dayChangePercent: number | undefined;
+
+        if (currentPrice && previousClose) {
+          const priceChange = currentPrice - previousClose;
+          dayChange = priceChange * h.totalShares; // Total $ change for this holding
+          dayChangePercent = (priceChange / previousClose) * 100;
+        }
+
+        const price = currentPrice || h.totalCost / h.totalShares;
+        const totalCost = h.totalCost;
+        const marketValue = h.totalShares * price;
+        const unrealizedPL = marketValue - totalCost;
+        const unrealizedPLPercent = totalCost > 0 ? (unrealizedPL / totalCost) * 100 : 0;
+
+        return {
+          symbol: h.symbol,
+          broker: h.broker as any,
+          shares: h.totalShares,
+          avgCost: h.totalCost / h.totalShares,
+          currentPrice,
+          totalCost,
+          marketValue,
+          unrealizedPL,
+          unrealizedPLPercent,
+          dayChange,
+          dayChangePercent,
+        };
+      });
 
     return {
       holdings: calculatedHoldings,

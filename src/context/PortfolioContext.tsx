@@ -28,29 +28,30 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
   }, [apiKey]);
 
   const refreshPrices = async () => {
-    // Get unique symbols
     const symbols = Array.from(new Set(portfolio.holdings.map(h => h.symbol)));
 
     await Promise.all(symbols.map(async (symbol) => {
-      let price: number | null = null;
+      let current: number | null = null;
+      let previousClose: number | undefined;
 
-      // Normalize symbol for TW stocks (append .TW if it's a 4-digit number)
       const isTwStock = /^\d{4}$/.test(symbol);
       const fetchSymbol = isTwStock ? `${symbol}.TW` : symbol;
 
-      // Try Finnhub first if key exists
       if (apiKey) {
-        price = await fetchQuote(fetchSymbol, apiKey);
+        current = await fetchQuote(fetchSymbol, apiKey);
       }
 
-      // If no price yet (no key or failed), try Yahoo
-      if (price === null) {
+      if (current === null) {
         console.log(`Attempting to fetch ${fetchSymbol} from Yahoo Finance...`);
-        price = await fetchQuoteYahoo(fetchSymbol);
+        const yahooData = await fetchQuoteYahoo(fetchSymbol);
+        if (yahooData) {
+          current = yahooData.current;
+          previousClose = yahooData.previousClose;
+        }
       }
 
-      if (price !== null) {
-        portfolio.updatePrice(symbol, price);
+      if (current !== null) {
+        portfolio.updatePrice(symbol, current, previousClose);
       }
     }));
   };

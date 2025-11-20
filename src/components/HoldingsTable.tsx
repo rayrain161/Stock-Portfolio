@@ -42,9 +42,9 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings: propHold
           const pl = marketValue - totalCost;
           const plPercent = totalCost > 0 ? (pl / totalCost) * 100 : 0;
 
-          // Mock day change for visual completeness (since we don't have real data yet)
-          const dayChange = (price * 0.015);
-          const dayChangePercent = 1.5;
+          // Use day change from holding if available
+          const dayChange = holding.dayChange || 0;
+          const dayChangePercent = holding.dayChangePercent || 0;
 
           return (
             <tr key={`${holding.broker}-${holding.symbol}`} className="hover:bg-[#2a2e39] transition-colors group">
@@ -57,8 +57,11 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings: propHold
               </td>
               <td className="px-4 py-2 text-right text-[#d1d4dc] font-mono">{holding.shares.toLocaleString()}</td>
               <td className="px-4 py-2 text-right text-[#d1d4dc] font-mono">${price.toFixed(2)}</td>
-              <td className="px-4 py-2 text-right font-mono">
-                <span className="text-[#00b498]">+{dayChange.toFixed(2)} (+{dayChangePercent}%)</span>
+              <td className={clsx(
+                "px-4 py-2 text-right font-mono",
+                dayChange >= 0 ? "text-[#00b498]" : "text-[#e22a19]"
+              )}>
+                {dayChange >= 0 ? '+' : ''}{dayChange.toFixed(2)} ({dayChange >= 0 ? '+' : ''}{dayChangePercent.toFixed(2)}%)
               </td>
               <td className="px-4 py-2 text-right font-medium text-[#d1d4dc] font-mono">${marketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
               <td className="px-4 py-2 text-right text-[#787b86] font-mono">${holding.avgCost.toFixed(2)}</td>

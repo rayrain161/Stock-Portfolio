@@ -35,6 +35,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
     let totalValue = 0;
     let totalCost = 0;
     let totalUnrealizedPL = 0;
+    let totalDayChange = 0;
 
     filteredHoldings.forEach((h) => {
       const price = h.currentPrice || h.avgCost;
@@ -44,13 +45,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
       totalValue += value;
       totalCost += cost;
       totalUnrealizedPL += (value - cost);
+
+      // Sum up day changes from each holding
+      if (h.dayChange !== undefined) {
+        totalDayChange += h.dayChange;
+      }
     });
+
+    const totalDayChangePercent = (totalValue - totalDayChange) > 0
+      ? (totalDayChange / (totalValue - totalDayChange)) * 100
+      : 0;
 
     return {
       totalValue,
       totalCost,
       totalUnrealizedPL,
       totalUnrealizedPLPercent: totalCost > 0 ? (totalUnrealizedPL / totalCost) * 100 : 0,
+      totalDayChange,
+      totalDayChangePercent,
     };
   }, [filteredHoldings]);
 
@@ -107,31 +119,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
               {filter.label}
             </button>
           ))}
-        </div>
-      </div>
-
-      {/* Summary Strip */}
-      <div className="bg-[#1e222d] border border-[#2a2e39] p-6 rounded flex items-center justify-between shadow-sm">
-        <div className="flex gap-12">
-          <SummaryItem
-            label="Total Assets"
-            value={`$${filteredStats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-            color="#d1d4dc"
-          />
-          <SummaryItem
-            label="Day Change"
-            value="+$577.95"
-            subValue="(+1.80%)"
-            color="#00b498"
-          />
-          <SummaryItem
-            label="Total P/L"
-            value={`${filteredStats.totalUnrealizedPL >= 0 ? '+' : '-'}$${Math.abs(filteredStats.totalUnrealizedPL).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-            subValue={`(${filteredStats.totalUnrealizedPLPercent.toFixed(2)}%)`}
-            color={filteredStats.totalUnrealizedPL >= 0 ? '#00b498' : '#e22a19'}
-          />
-        </div>
-        <div className="flex gap-2">
           {apiKey && (
             <button
               onClick={handleRefresh}

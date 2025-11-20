@@ -19,27 +19,6 @@ export interface Holding {
   symbol: string;
   broker: Broker;
   shares: number;
-export type Broker = 'FubonTW' | 'FubonSub' | 'Firstrade';
-export type TransactionType = 'Buy' | 'Sell';
-export type Currency = 'TWD' | 'USD';
-
-export interface Transaction {
-  id: string;
-  date: string;
-  broker: Broker;
-  symbol: string;
-  type: TransactionType;
-  shares: number;
-  price: number;
-  fee: number;
-  notes?: string;
-  currency?: Currency; // Optional for backwards compatibility
-}
-
-export interface Holding {
-  symbol: string;
-  broker: Broker;
-  shares: number;
   avgCost: number;
   currentPrice?: number;
   totalCost: number;
@@ -57,20 +36,6 @@ export interface PortfolioStats {
   totalUnrealizedPL: number;
   totalUnrealizedPLPercent: number;
   totalRealizedPL: number;
-  // Currency breakdown (for expanded view)
-  twdStats: {
-    totalValue: number;
-    totalCost: number;
-    totalPL: number;
-    totalPLPercent: number;
-  };
-  usdStats: {
-    totalValue: number;
-    totalCost: number;
-    totalPL: number;
-    totalPLPercent: number;
-  };
-  exchangeRate: number;
 }
 
 export interface RealizedPosition {

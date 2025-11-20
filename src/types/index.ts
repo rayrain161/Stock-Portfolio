@@ -12,7 +12,28 @@ export interface Transaction {
   price: number;
   fee: number;
   notes?: string;
-  currency: Currency;
+  currency?: Currency; // Optional for backwards compatibility
+}
+
+export interface Holding {
+  symbol: string;
+  broker: Broker;
+  shares: number;
+export type Broker = 'FubonTW' | 'FubonSub' | 'Firstrade';
+export type TransactionType = 'Buy' | 'Sell';
+export type Currency = 'TWD' | 'USD';
+
+export interface Transaction {
+  id: string;
+  date: string;
+  broker: Broker;
+  symbol: string;
+  type: TransactionType;
+  shares: number;
+  price: number;
+  fee: number;
+  notes?: string;
+  currency?: Currency; // Optional for backwards compatibility
 }
 
 export interface Holding {
@@ -25,7 +46,7 @@ export interface Holding {
   marketValue: number;
   unrealizedPL: number;
   unrealizedPLPercent: number;
-  currency: Currency;
+  currency?: Currency; // Optional for backwards compatibility
 }
 
 export interface PortfolioStats {
@@ -66,5 +87,5 @@ export interface RealizedPosition {
   netGainLoss: number;
   gainLossPercent: number;
   isShortTerm: boolean;
-  currency: Currency;
+  currency?: Currency; // Optional for backwards compatibility
 }

@@ -119,6 +119,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
               {filter.label}
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Summary Strip */}
+      <div className="bg-[#1e222d] border border-[#2a2e39] p-6 rounded flex items-center justify-between shadow-sm">
+        <div className="flex gap-12">
+          <SummaryItem
+            label="Total Assets"
+            value={`$${filteredStats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            color="#d1d4dc"
+          />
+          <SummaryItem
+            label="Day Change"
+            value={`${filteredStats.totalDayChange >= 0 ? '+' : ''}$${Math.abs(filteredStats.totalDayChange).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            subValue={`(${filteredStats.totalDayChange >= 0 ? '+' : ''}${filteredStats.totalDayChangePercent.toFixed(2)}%)`}
+            color={filteredStats.totalDayChange >= 0 ? '#00b498' : '#e22a19'}
+          />
+          <SummaryItem
+            label="Total P/L"
+            value={`${filteredStats.totalUnrealizedPL >= 0 ? '+' : '-'}$${Math.abs(filteredStats.totalUnrealizedPL).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            subValue={`(${filteredStats.totalUnrealizedPLPercent.toFixed(2)}%)`}
+            color={filteredStats.totalUnrealizedPL >= 0 ? '#00b498' : '#e22a19'}
+          />
+        </div>
+        <div className="flex gap-2">
           {apiKey && (
             <button
               onClick={handleRefresh}

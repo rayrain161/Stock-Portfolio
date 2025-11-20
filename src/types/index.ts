@@ -1,0 +1,70 @@
+export type Broker = 'FubonTW' | 'FubonSub' | 'Firstrade';
+export type TransactionType = 'Buy' | 'Sell';
+export type Currency = 'TWD' | 'USD';
+
+export interface Transaction {
+  id: string;
+  date: string;
+  broker: Broker;
+  symbol: string;
+  type: TransactionType;
+  shares: number;
+  price: number;
+  fee: number;
+  notes?: string;
+  currency: Currency;
+}
+
+export interface Holding {
+  symbol: string;
+  broker: Broker;
+  shares: number;
+  avgCost: number;
+  currentPrice?: number;
+  totalCost: number;
+  marketValue: number;
+  unrealizedPL: number;
+  unrealizedPLPercent: number;
+  currency: Currency;
+}
+
+export interface PortfolioStats {
+  totalValue: number;
+  totalCost: number;
+  totalUnrealizedPL: number;
+  totalUnrealizedPLPercent: number;
+  totalRealizedPL: number;
+  // Currency breakdown (for expanded view)
+  twdStats: {
+    totalValue: number;
+    totalCost: number;
+    totalPL: number;
+    totalPLPercent: number;
+  };
+  usdStats: {
+    totalValue: number;
+    totalCost: number;
+    totalPL: number;
+    totalPLPercent: number;
+  };
+  exchangeRate: number;
+}
+
+export interface RealizedPosition {
+  symbol: string;
+  broker: Broker;
+  quantity: number;
+  dateAcquired: string;
+  dateSold: string;
+  daysHeld: number;
+  acquisitionPrice: number;
+  acquisitionFee: number;
+  salePrice: number;
+  saleFee: number;
+  adjustedCost: number;
+  salesProceeds: number;
+  netGainLoss: number;
+  gainLossPercent: number;
+  isShortTerm: boolean;
+  currency: Currency;
+}

@@ -129,19 +129,24 @@ export const usePortfolio = () => {
 
       const holding = holdingsMap[key];
 
+      // Ensure values are numbers
+      const shares = Number(txn.shares);
+      const price = Number(txn.price);
+      const fee = Number(txn.fee);
+
       if (txn.type === 'Buy') {
         holding.lots.push({
-          shares: txn.shares,
-          price: txn.price,
-          fee: txn.fee,
+          shares: shares,
+          price: price,
+          fee: fee,
           date: txn.date,
         });
-        holding.totalShares += txn.shares;
-        holding.totalCost += (txn.shares * txn.price) + txn.fee;
+        holding.totalShares += shares;
+        holding.totalCost += (shares * price) + fee;
       } else {
-        let sharesToSell = txn.shares;
-        const sellPricePerShare = txn.price;
-        const sellFeePerShare = txn.fee / txn.shares;
+        let sharesToSell = shares;
+        const sellPricePerShare = price;
+        const sellFeePerShare = fee / shares;
 
         while (sharesToSell > 0 && holding.lots.length > 0) {
           const lot = holding.lots[0];

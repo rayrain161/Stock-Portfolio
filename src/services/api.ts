@@ -1,5 +1,4 @@
 import type { Transaction } from '../types';
-import { gasClient } from './gasClient';
 
 export interface Api {
   getTransactions: () => Promise<Transaction[]>;
@@ -7,6 +6,8 @@ export interface Api {
   deleteTransaction: (id: string) => Promise<void>;
   getHistory: () => Promise<any[]>;
   getPrice: (symbol: string) => Promise<any>;
+  importHistory: (data: any[], overwrite?: boolean) => Promise<any>;
+  clearHistory: () => Promise<any>;
 }
 
 const LOCAL_API_URL = 'http://localhost:3001/api';
@@ -39,10 +40,24 @@ const localApi: Api = {
   },
   getPrice: async (symbol) => {
     // Local proxy via Vite
-    const url = `/api/yahoo/v8/finance/chart/${symbol}?range=2d&interval=1d`;
+    const url = `/api/yahoo/chart/${symbol}?range=2d&interval=1d`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error('Failed to fetch price locally');
-    return res.json();
+    if (!res.ok) return null;
+    const json = await res.json();
+    const result = json.chart?.result?.[0];
+    const meta = result?.meta;
+    if (meta) {
+      return { current: meta.regularMarketPrice, previousClose: meta.previousClose };
+    }
+    return null;
+  },
+  importHistory: async (data) => {
+    console.warn('Import history not supported in local mode');
+    return { success: false, error: 'Not supported locally' };
+  },
+  clearHistory: async () => {
+    console.warn('Clear history not supported in local mode');
+    return { success: false, error: 'Not supported locally' };
   }
 };
 
@@ -91,7 +106,7 @@ const hybridApi: Api = {
   },
   getHistory: async () => {
     const gasUrl = getGasUrl();
-    if (!gasUrl) throw new Error('GAS_URL_MISSING');
+    if (!gasUrl) return []; // Return empty if not configured
 
     const res = await fetch(`${gasUrl}?op=history`);
     if (!res.ok) throw new Error('Failed to fetch history from GAS');
@@ -99,10 +114,34 @@ const hybridApi: Api = {
   },
   getPrice: async (symbol) => {
     const gasUrl = getGasUrl();
-    if (!gasUrl) throw new Error('GAS_URL_MISSING');
+    if (!gasUrl) return null;
 
     const res = await fetch(`${gasUrl}?op=price&symbol=${symbol}`);
-    if (!res.ok) throw new Error('Failed to fetch price from GAS');
+    if (!res.ok) return null;
+    return res.json();
+  },
+  importHistory: async (data, overwrite = false) => {
+    const gasUrl = getGasUrl();
+    if (!gasUrl) throw new Error('GAS_URL_MISSING');
+
+    const res = await fetch(gasUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ op: 'importHistory', historyItems: data, overwrite }),
+    });
+    if (!res.ok) throw new Error('Failed to import history to GAS');
+    return res.json();
+  },
+  clearHistory: async () => {
+    const gasUrl = getGasUrl();
+    if (!gasUrl) throw new Error('GAS_URL_MISSING');
+
+    const res = await fetch(gasUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ op: 'clearHistory' }),
+    });
+    if (!res.ok) throw new Error('Failed to clear history in GAS');
     return res.json();
   }
 };
@@ -110,4 +149,5 @@ const hybridApi: Api = {
 // Detect environment
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
+// For GitHub Pages (or any non-localhost), default to hybridApi
 export const api = isLocal ? localApi : hybridApi;

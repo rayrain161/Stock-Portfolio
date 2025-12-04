@@ -6,9 +6,10 @@ import { HoldingsTable } from './components/HoldingsTable';
 import { TransactionForm } from './components/TransactionForm';
 import { TransactionHistory } from './components/TransactionHistory';
 import { RealizedGains } from './components/RealizedGains';
+import { HistoricalAnalysis } from './components/HistoricalAnalysis';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'holdings' | 'history' | 'realized'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'holdings' | 'history' | 'analysis' | 'realized'>('dashboard');
   const formButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleNewTrade = () => {
@@ -49,6 +50,13 @@ function App() {
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-slate-200">Transaction History</h2>
             <TransactionHistory />
+          </div>
+        )}
+
+        {activeTab === 'analysis' && (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-slate-200">Historical Analysis</h2>
+            <HistoricalAnalysis />
           </div>
         )}
 

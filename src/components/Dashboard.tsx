@@ -10,6 +10,7 @@ import {
 } from 'recharts';
 import { HoldingsTable } from './HoldingsTable';
 import { HistoricalAnalysis } from './HistoricalAnalysis';
+
 import { clsx } from 'clsx';
 import { RefreshCw, Settings } from 'lucide-react';
 import type { Broker } from '../types';
@@ -326,8 +327,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
             </div>
           </div>
 
-          {/* Historical Analysis */}
-          <HistoricalAnalysis />
+          {/* Historical Analysis (Embedded) */}
+          <div className="flex-1 min-h-[400px]">
+            <HistoricalAnalysis simple />
+          </div>
+
         </div>
       </div>
     </div>

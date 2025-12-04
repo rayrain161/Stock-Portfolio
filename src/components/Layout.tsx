@@ -6,8 +6,8 @@ import { SettingsDialog } from './SettingsDialog';
 
 interface LayoutProps {
   children: React.ReactNode;
-  activeTab: 'dashboard' | 'holdings' | 'history' | 'realized';
-  onTabChange: (tab: 'dashboard' | 'holdings' | 'history' | 'realized') => void;
+  activeTab: 'dashboard' | 'holdings' | 'history' | 'analysis' | 'realized';
+  onTabChange: (tab: 'dashboard' | 'holdings' | 'history' | 'analysis' | 'realized') => void;
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => {
@@ -62,6 +62,18 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
             >
               <ArrowLeftRight className="w-4 h-4" />
               History
+            </button>
+            <button
+              onClick={() => onTabChange('analysis')}
+              className={clsx(
+                "flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors",
+                activeTab === 'analysis'
+                  ? "text-[#d1d4dc] bg-[#2a2e39]"
+                  : "text-[#787b86] hover:text-[#d1d4dc] hover:bg-[#2a2e39]/50"
+              )}
+            >
+              <TrendingUp className="w-4 h-4" />
+              Analysis
             </button>
             <button
               onClick={() => onTabChange('realized')}

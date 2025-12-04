@@ -39,6 +39,18 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
     localStorage.setItem('usd_twd_rate', exchangeRate.toString());
   }, [exchangeRate]);
 
+  // Auto-refresh on mount, regardless of apiKey
+  useEffect(() => {
+    refreshPrices();
+
+    const intervalId = setInterval(() => {
+      console.log('Auto-refreshing prices...');
+      refreshPrices();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(intervalId);
+  }, [apiKey]); // Re-run if apiKey changes, but also run initially
+
   const refreshPrices = async () => {
     const symbols = Array.from(new Set(portfolio.holdings.map(h => h.symbol)));
 
@@ -54,27 +66,37 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
       let current: number | null = null;
       let previousClose: number | undefined;
 
-      // Taiwan stocks can be 4-6 digits (e.g., 2330, 0050, 00878, 006208)
-      const isTwStock = /^\d{4,6}$/.test(symbol);
+      // Taiwan stocks: usually 4-6 digits. 
+      // Handle cases like "50" -> "0050"
+      const isDigit = /^\d+$/.test(symbol);
 
-      console.log(`[refreshPrices] symbol="${symbol}", isTwStock=${isTwStock}, length=${symbol.length}`);
+      console.log(`[refreshPrices] symbol="${symbol}", isDigit=${isDigit}`);
 
       if (apiKey) {
-        const fetchSymbol = isTwStock ? `${symbol}.TW` : symbol;
+        let fetchSymbol = symbol;
+        if (isDigit) {
+          // Pad to 4 digits if needed for Finnhub? Finnhub usually expects 2330.TW
+          // If user entered "50", we might need "0050.TW"
+          const padded = symbol.padStart(4, '0');
+          fetchSymbol = `${padded}.TW`;
+        }
         current = await fetchQuote(fetchSymbol, apiKey);
       }
 
       if (current === null) {
-        // Try Yahoo Finance with different suffixes for Taiwan stocks
-        if (isTwStock) {
+        // Try Yahoo Finance via GAS
+        if (isDigit) {
+          // Pad to 4 digits for Yahoo (e.g. 50 -> 0050.TW)
+          const padded = symbol.padStart(4, '0');
+
           // Try .TW first
-          console.log(`Attempting to fetch ${symbol}.TW from Yahoo Finance...`);
-          let yahooData = await fetchQuoteYahoo(`${symbol}.TW`);
+          console.log(`Attempting to fetch ${padded}.TW from Yahoo Finance...`);
+          let yahooData = await fetchQuoteYahoo(`${padded}.TW`);
 
           // If .TW fails, try .TWO (for OTC stocks)
           if (!yahooData) {
-            console.log(`${symbol}.TW not found, trying ${symbol}.TWO...`);
-            yahooData = await fetchQuoteYahoo(`${symbol}.TWO`);
+            console.log(`${padded}.TW not found, trying ${padded}.TWO...`);
+            yahooData = await fetchQuoteYahoo(`${padded}.TWO`);
           }
 
           if (yahooData) {
@@ -94,23 +116,11 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
 
       if (current !== null) {
         portfolio.updatePrice(symbol, current, previousClose);
+      } else {
+        console.warn(`Failed to fetch price for ${symbol}`);
       }
     }));
   };
-
-  // Auto-refresh on mount if key exists, and set up interval
-  useEffect(() => {
-    if (apiKey) {
-      refreshPrices();
-
-      const intervalId = setInterval(() => {
-        console.log('Auto-refreshing prices...');
-        refreshPrices();
-      }, 30000); // 30 seconds
-
-      return () => clearInterval(intervalId);
-    }
-  }, [apiKey]); // Depend on apiKey so it runs when key is set
 
   return (
     <PortfolioContext.Provider value={{ ...portfolio, apiKey, setApiKey, refreshPrices, exchangeRate, setExchangeRate }}>

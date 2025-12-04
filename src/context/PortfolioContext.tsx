@@ -39,17 +39,89 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
     localStorage.setItem('usd_twd_rate', exchangeRate.toString());
   }, [exchangeRate]);
 
-  // Auto-refresh on mount, regardless of apiKey
+  const [refreshIndex, setRefreshIndex] = useState(0);
+
+  // Auto-refresh logic: Sequential "Wipe" effect
   useEffect(() => {
-    refreshPrices();
-
-    const intervalId = setInterval(() => {
-      console.log('Auto-refreshing prices...');
+    // Initial fetch of all prices on mount/change
+    if (portfolio.holdings.length > 0) {
       refreshPrices();
-    }, 30000); // 30 seconds
+    }
+  }, [apiKey, portfolio.holdings.length]);
 
-    return () => clearInterval(intervalId);
-  }, [apiKey, portfolio.holdings.length]); // Re-run if apiKey changes or holdings change
+  useEffect(() => {
+    if (portfolio.holdings.length === 0) return;
+
+    const symbols = Array.from(new Set(portfolio.holdings.map(h => h.symbol))).sort();
+    if (symbols.length === 0) return;
+
+    const timer = setTimeout(async () => {
+      const currentIndex = refreshIndex % symbols.length;
+      const symbol = symbols[currentIndex];
+
+      console.log(`[Auto-Refresh] Updating ${symbol} (${currentIndex + 1}/${symbols.length})...`);
+
+      // Also refresh exchange rate occasionally? Let's do it every cycle for now or just with the first item
+      if (currentIndex === 0) {
+        fetchQuoteYahoo('TWD=X').then(rateData => {
+          if (rateData?.current) setExchangeRate(rateData.current);
+        });
+      }
+
+      await fetchSinglePrice(symbol);
+      setRefreshIndex(prev => prev + 1);
+    }, 5000); // 5 seconds per stock
+
+    return () => clearTimeout(timer);
+  }, [refreshIndex, portfolio.holdings.length, apiKey]);
+
+  const fetchSinglePrice = async (symbol: string) => {
+    let current: number | null = null;
+    let previousClose: number | undefined;
+
+    // Taiwan stocks: usually 4-6 digits. 
+    // Handle cases like "50" -> "0050"
+    const isDigit = /^\d+$/.test(symbol);
+
+    if (apiKey) {
+      let fetchSymbol = symbol;
+      if (isDigit) {
+        const padded = symbol.padStart(4, '0');
+        fetchSymbol = `${padded}.TW`;
+      }
+      current = await fetchQuote(fetchSymbol, apiKey);
+    }
+
+    if (current === null) {
+      // Try Yahoo Finance via GAS
+      if (isDigit) {
+        const padded = symbol.padStart(4, '0');
+        // Try .TW first
+        let yahooData = await fetchQuoteYahoo(`${padded}.TW`);
+        // If .TW fails, try .TWO (for OTC stocks)
+        if (!yahooData) {
+          yahooData = await fetchQuoteYahoo(`${padded}.TWO`);
+        }
+        if (yahooData) {
+          current = yahooData.current;
+          previousClose = yahooData.previousClose;
+        }
+      } else {
+        // For non-Taiwan stocks, use symbol as-is
+        const yahooData = await fetchQuoteYahoo(symbol);
+        if (yahooData) {
+          current = yahooData.current;
+          previousClose = yahooData.previousClose;
+        }
+      }
+    }
+
+    if (current !== null) {
+      portfolio.updatePrice(symbol, current, previousClose);
+    } else {
+      console.warn(`Failed to fetch price for ${symbol}`);
+    }
+  };
 
   const refreshPrices = async () => {
     const symbols = Array.from(new Set(portfolio.holdings.map(h => h.symbol)));
@@ -62,64 +134,7 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
       console.log(`Exchange rate updated: 1 USD = ${rateData.current} TWD`);
     }
 
-    await Promise.all(symbols.map(async (symbol) => {
-      let current: number | null = null;
-      let previousClose: number | undefined;
-
-      // Taiwan stocks: usually 4-6 digits. 
-      // Handle cases like "50" -> "0050"
-      const isDigit = /^\d+$/.test(symbol);
-
-      console.log(`[refreshPrices] symbol="${symbol}", isDigit=${isDigit}`);
-
-      if (apiKey) {
-        let fetchSymbol = symbol;
-        if (isDigit) {
-          // Pad to 4 digits if needed for Finnhub? Finnhub usually expects 2330.TW
-          // If user entered "50", we might need "0050.TW"
-          const padded = symbol.padStart(4, '0');
-          fetchSymbol = `${padded}.TW`;
-        }
-        current = await fetchQuote(fetchSymbol, apiKey);
-      }
-
-      if (current === null) {
-        // Try Yahoo Finance via GAS
-        if (isDigit) {
-          // Pad to 4 digits for Yahoo (e.g. 50 -> 0050.TW)
-          const padded = symbol.padStart(4, '0');
-
-          // Try .TW first
-          console.log(`Attempting to fetch ${padded}.TW from Yahoo Finance...`);
-          let yahooData = await fetchQuoteYahoo(`${padded}.TW`);
-
-          // If .TW fails, try .TWO (for OTC stocks)
-          if (!yahooData) {
-            console.log(`${padded}.TW not found, trying ${padded}.TWO...`);
-            yahooData = await fetchQuoteYahoo(`${padded}.TWO`);
-          }
-
-          if (yahooData) {
-            current = yahooData.current;
-            previousClose = yahooData.previousClose;
-          }
-        } else {
-          // For non-Taiwan stocks, use symbol as-is
-          console.log(`Attempting to fetch ${symbol} from Yahoo Finance...`);
-          const yahooData = await fetchQuoteYahoo(symbol);
-          if (yahooData) {
-            current = yahooData.current;
-            previousClose = yahooData.previousClose;
-          }
-        }
-      }
-
-      if (current !== null) {
-        portfolio.updatePrice(symbol, current, previousClose);
-      } else {
-        console.warn(`Failed to fetch price for ${symbol}`);
-      }
-    }));
+    await Promise.all(symbols.map(symbol => fetchSinglePrice(symbol)));
   };
 
   return (

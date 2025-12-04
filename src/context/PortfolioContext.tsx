@@ -68,8 +68,13 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
         });
       }
 
-      await fetchSinglePrice(symbol);
-      setRefreshIndex(prev => prev + 1);
+      try {
+        await fetchSinglePrice(symbol);
+      } catch (error) {
+        console.error(`[Auto-Refresh] Failed to update ${symbol}:`, error);
+      } finally {
+        setRefreshIndex(prev => prev + 1);
+      }
     }, 5000); // 5 seconds per stock
 
     return () => clearTimeout(timer);

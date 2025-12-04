@@ -103,7 +103,7 @@ function setup() {
   let txnSheet = ss.getSheetByName('Transactions');
   if (!txnSheet) {
     txnSheet = ss.insertSheet('Transactions');
-    txnSheet.appendRow(['id', 'date', 'type', 'symbol', 'shares', 'price', 'fee', 'tax', 'total', 'note', 'broker', 'currency']);
+    txnSheet.appendRow(['id', 'date', 'type', 'symbol', 'shares', 'price', 'fee', 'tax', 'total', 'notes', 'broker', 'currency']);
   }
 
   // Setup History Sheet with EXTENDED columns
@@ -150,7 +150,10 @@ function addTransaction(txn) {
   if (!sheet) { setup(); sheet = ss.getSheetByName('Transactions'); }
 
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const row = headers.map(header => txn[header] || '');
+  const row = headers.map(header => {
+    if (header === 'note' || header === 'notes') return txn.notes || txn.note || '';
+    return txn[header] || '';
+  });
 
   sheet.appendRow(row);
   return txn;
@@ -274,7 +277,10 @@ function importTransactions(txns) {
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
 
   const rows = txns.map(txn => {
-    return headers.map(header => txn[header] || '');
+    return headers.map(header => {
+      if (header === 'note' || header === 'notes') return txn.notes || txn.note || '';
+      return txn[header] || '';
+    });
   });
 
   if (rows.length > 0) {

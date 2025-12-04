@@ -80,17 +80,22 @@ export const TransactionImporter: React.FC<TransactionImporterProps> = ({ onClos
         const taxStr = cleanParts[7]?.replace(/,/g, '') || '0';
         const netStr = cleanParts[15]?.replace(/,/g, '') || '0'; // Net Amount
 
+        console.log('Parsing line:', { line, typeStr, symbolStr });
+
         // Parse Type
-        let type: 'Buy' | 'Sell' = 'Buy';
-        if (typeStr.includes('買') || typeStr.includes('定期定額')) type = 'Buy';
+        let type: 'Buy' | 'Sell' | null = null;
+        if (typeStr.includes('買') || typeStr.includes('定期')) type = 'Buy';
         else if (typeStr.includes('賣')) type = 'Sell';
-        else {
+
+        if (!type) {
+          console.warn('Unknown type:', typeStr);
           skipped++;
-          continue; // Skip unknown types
+          continue;
         }
 
-        // Parse Symbol: Extract 006208 from "富邦台50(006208)"
-        const symbolMatch = symbolStr.match(/\((\d+)\)/);
+        // Parse Symbol: Extract 006208 from "富邦台50(006208)" or "富邦台50（006208）"
+        // Handle both half-width and full-width parentheses
+        const symbolMatch = symbolStr.match(/[(\uff08](\d+)[)\uff09]/);
         const symbol = symbolMatch ? symbolMatch[1] : symbolStr;
 
         // Parse Numbers
@@ -101,6 +106,7 @@ export const TransactionImporter: React.FC<TransactionImporterProps> = ({ onClos
         const net = Math.abs(parseFloat(netStr));
 
         if (isNaN(shares) || isNaN(price)) {
+          console.warn('Invalid numbers:', { sharesStr, priceStr });
           skipped++;
           continue;
         }

@@ -40,10 +40,25 @@ export const TransactionImporter: React.FC<TransactionImporterProps> = ({ onClos
         if (!line) continue;
 
         // Handle CSV parsing with quotes (e.g. "1,000")
-        // Use split with regex to ignore commas inside quotes
-        const parts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+        // Robust character-by-character parsing
+        const parts: string[] = [];
+        let current = '';
+        let inQuote = false;
 
-        if (!parts || parts.length < 6) {
+        for (let j = 0; j < line.length; j++) {
+          const char = line[j];
+          if (char === '"') {
+            inQuote = !inQuote;
+          } else if (char === ',' && !inQuote) {
+            parts.push(current);
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        parts.push(current); // Push the last part
+
+        if (parts.length < 6) {
           console.warn('Skipping invalid line:', line);
           skipped++;
           continue;

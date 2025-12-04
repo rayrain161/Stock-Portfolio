@@ -1,10 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { usePortfolioContext } from '../context/PortfolioContext';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { setGasUrl } from '../services/api';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip
+} from 'recharts';
 import { HoldingsTable } from './HoldingsTable';
 import { HistoricalAnalysis } from './HistoricalAnalysis';
 import { clsx } from 'clsx';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Settings } from 'lucide-react';
 import type { Broker } from '../types';
 
 const COLORS = ['#2962ff', '#e22a19', '#00b498', '#f59e0b', '#8b5cf6', '#ec4899', '#6366f1'];
@@ -15,6 +22,48 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
   const { stats, holdings, refreshPrices, apiKey, exchangeRate } = usePortfolioContext();
+  const [showSettings, setShowSettings] = useState(false);
+  const [gasUrlInput, setGasUrlInput] = useState('');
+
+  // Check if we need GAS URL
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const hasGasUrl = !!localStorage.getItem('stock_position_gas_url');
+  const needsConfig = !isLocal && !hasGasUrl;
+
+  const handleSaveGasUrl = () => {
+    if (gasUrlInput) {
+      setGasUrl(gasUrlInput);
+    }
+  };
+
+  if (needsConfig) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#131722] text-[#d1d4dc] p-4">
+        <div className="bg-[#1e222d] p-8 rounded-xl shadow-lg max-w-md w-full">
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <Settings className="w-6 h-6 text-[#2962ff]" />
+            Setup Connection
+          </h2>
+          <p className="text-[#787b86] mb-6">
+            To connect to your Google Sheet, please enter the <strong>Web App URL</strong> you got from Google Apps Script.
+          </p>
+          <input
+            type="text"
+            value={gasUrlInput}
+            onChange={(e) => setGasUrlInput(e.target.value)}
+            placeholder="https://script.google.com/macros/s/..."
+            className="w-full bg-[#2a2e39] border border-[#363a45] rounded-lg px-4 py-2 text-[#d1d4dc] mb-4 focus:outline-none focus:border-[#2962ff]"
+          />
+          <button
+            onClick={handleSaveGasUrl}
+            className="w-full bg-[#2962ff] hover:bg-[#1e53e5] text-white font-medium py-2 px-4 rounded-lg transition-colors"
+          >
+            Connect
+          </button>
+        </div>
+      </div>
+    );
+  }
   const [allocationType, setAllocationType] = React.useState<'symbol' | 'broker'>('symbol');
   const [brokerFilter, setBrokerFilter] = React.useState<'all' | Broker>('all');
   const [isRefreshing, setIsRefreshing] = React.useState(false);
@@ -236,11 +285,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
                       data={allocationData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={80}
-                      outerRadius={120}
-                      paddingAngle={2}
+                      innerRadius={70}
+                      outerRadius={115}
+                      paddingAngle={0}
                       dataKey="value"
                       stroke="none"
+                      label={(entry: any) => {
+                        const percent = entry.percent;
+                        return percent && percent > 0.05 ? entry.name : '';
+                      }}
+                      labelLine={false}
                     >
                       {allocationData.map((_, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -249,17 +303,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
                     <Tooltip
                       contentStyle={{ backgroundColor: '#131722', borderColor: '#2a2e39', borderRadius: '4px', color: '#d1d4dc' }}
                       itemStyle={{ color: '#d1d4dc' }}
-                      formatter={(value: number) => `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                    />
-                    <Legend
-                      verticalAlign="bottom"
-                      align="center"
-                      iconType="circle"
-                      wrapperStyle={{ color: '#d1d4dc', fontSize: '12px', paddingTop: '20px' }}
+                      formatter={(value: number, name: string) => {
+                        const total = allocationData.reduce((sum, item) => sum + item.value, 0);
+                        const percent = ((value / total) * 100).toFixed(2);
+                        return [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${percent}%)`, name];
+                      }}
                     />
                     <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle">
-                      <tspan x="50%" dy="-1em" fontSize="12" fill="#787b86">Total Assets</tspan>
-                      <tspan x="50%" dy="1.5em" fontSize="18" fontWeight="bold" fill="#d1d4dc">
+                      <tspan x="50%" dy="-0.5em" fontSize="11" fill="#787b86">Total Assets</tspan>
+                      <tspan x="50%" dy="1.3em" fontSize="16" fontWeight="bold" fill="#d1d4dc">
                         ${filteredStats.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                       </tspan>
                     </text>

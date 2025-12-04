@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   LineChart,
   Line,
@@ -12,6 +12,7 @@ import {
   Area
 } from 'recharts';
 import { Loader2 } from 'lucide-react';
+import { api } from '../services/api';
 
 interface HistoryData {
   date: string;
@@ -31,8 +32,14 @@ export function HistoricalAnalysis() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/history');
-        const jsonData = await response.json();
+        if ((window as any).INITIAL_DATA?.history) {
+          console.log('Using embedded history data');
+          setData((window as any).INITIAL_DATA.history);
+          setIsLoading(false);
+          return;
+        }
+
+        const jsonData = await api.getHistory();
         setData(jsonData);
       } catch (error) {
         console.error('Failed to fetch history:', error);

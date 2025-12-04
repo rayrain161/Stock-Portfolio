@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { usePortfolioContext } from '../context/PortfolioContext';
-import type { Transaction, Broker, TransactionType, Currency } from '../types';
-import { Upload, AlertCircle, Check, X, ArrowRight } from 'lucide-react';
+import type { Transaction, Broker } from '../types';
+import { AlertCircle, Check, X, ArrowRight } from 'lucide-react';
 import { clsx } from 'clsx';
 
 export const CsvImporter: React.FC<{ onClose: () => void }> = ({ onClose }) => {

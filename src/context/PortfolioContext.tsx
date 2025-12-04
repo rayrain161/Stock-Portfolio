@@ -98,10 +98,17 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
     }));
   };
 
-  // Auto-refresh on mount if key exists
+  // Auto-refresh on mount if key exists, and set up interval
   useEffect(() => {
     if (apiKey) {
       refreshPrices();
+
+      const intervalId = setInterval(() => {
+        console.log('Auto-refreshing prices...');
+        refreshPrices();
+      }, 30000); // 30 seconds
+
+      return () => clearInterval(intervalId);
     }
   }, [apiKey]); // Depend on apiKey so it runs when key is set
 

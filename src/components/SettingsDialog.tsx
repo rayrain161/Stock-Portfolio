@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Trash2 } from 'lucide-react';
 import { usePortfolioContext } from '../context/PortfolioContext';
+import { setGasUrl } from '../services/api';
 
 interface SettingsDialogProps {
   isOpen: boolean;
@@ -12,9 +13,14 @@ interface SettingsDialogProps {
 export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose, onSave, initialApiKey }) => {
   const { clearAllTransactions } = usePortfolioContext();
   const [apiKey, setApiKey] = useState(initialApiKey);
+  const [gasUrl, setGasUrlInput] = useState('');
 
   useEffect(() => {
     setApiKey(initialApiKey);
+    const savedGasUrl = localStorage.getItem('stock_position_gas_url');
+    if (savedGasUrl) {
+      setGasUrlInput(savedGasUrl);
+    }
   }, [initialApiKey, isOpen]);
 
   if (!isOpen) return null;
@@ -30,6 +36,23 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
         </div>
 
         <div className="p-6 space-y-6">
+          {/* GAS URL Section */}
+          <div>
+            <label className="block text-xs font-medium text-[#787b86] uppercase tracking-wide mb-2">
+              Google Apps Script URL
+            </label>
+            <input
+              type="text"
+              value={gasUrl}
+              onChange={(e) => setGasUrlInput(e.target.value)}
+              placeholder="https://script.google.com/macros/s/..."
+              className="w-full bg-[#131722] border border-[#2a2e39] rounded px-3 py-2 text-[#d1d4dc] text-sm focus:outline-none focus:border-[#2962ff] transition-colors placeholder-[#787b86]/50"
+            />
+            <p className="text-[10px] text-[#787b86] mt-2">
+              The Web App URL from your Google Apps Script deployment.
+            </p>
+          </div>
+
           <div>
             <label className="block text-xs font-medium text-[#787b86] uppercase tracking-wide mb-2">
               Finnhub API Key
@@ -70,6 +93,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
           <button
             onClick={() => {
               onSave(apiKey);
+              if (gasUrl) {
+                setGasUrl(gasUrl);
+              }
               onClose();
             }}
             className="flex items-center gap-2 px-4 py-2 bg-[#2962ff] hover:bg-[#1e53dc] text-white rounded text-sm font-medium transition-colors"

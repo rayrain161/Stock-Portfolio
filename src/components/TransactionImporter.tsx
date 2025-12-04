@@ -282,7 +282,7 @@ export const TransactionImporter: React.FC<TransactionImporterProps> = ({ onClos
                         <td className="p-3 text-right font-mono">{txn.price}</td>
                         <td className="p-3 text-right font-mono text-[#787b86]">{txn.fee}</td>
                         <td className="p-3 text-right font-mono text-[#787b86]">{txn.tax}</td>
-                        <td className="p-3 text-right font-mono font-medium">{txn.total.toLocaleString()}</td>
+                        <td className="p-3 text-right font-mono font-medium">{(txn.total ?? 0).toLocaleString()}</td>
                         <td className="p-3 text-[#787b86] text-xs">{txn.broker}</td>
                       </tr>
                     ))}

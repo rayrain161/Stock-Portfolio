@@ -201,7 +201,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
           />
           <SummaryItem
             label="Day Change"
-            value={`${filteredStats.totalDayChange >= 0 ? '+' : ''}$${Math.abs(filteredStats.totalDayChange).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            value={`${filteredStats.totalDayChange >= 0 ? '+' : '-'}$${Math.abs(filteredStats.totalDayChange).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             subValue={`(${filteredStats.totalDayChange >= 0 ? '+' : ''}${filteredStats.totalDayChangePercent.toFixed(2)}%)`}
             color={filteredStats.totalDayChange >= 0 ? '#00b498' : '#e22a19'}
           />

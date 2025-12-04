@@ -11,6 +11,8 @@ export interface Transaction {
   shares: number;
   price: number;
   fee: number;
+  tax?: number;
+  total?: number;
   notes?: string;
   currency?: Currency; // Optional for backwards compatibility
 }

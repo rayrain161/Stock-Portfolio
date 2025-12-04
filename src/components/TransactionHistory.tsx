@@ -1,16 +1,29 @@
 import React from 'react';
 import { usePortfolioContext } from '../context/PortfolioContext';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Upload } from 'lucide-react';
 import { clsx } from 'clsx';
+import { TransactionImporter } from './TransactionImporter';
 
 export const TransactionHistory: React.FC = () => {
-  const { transactions, deleteTransaction } = usePortfolioContext();
-  console.log('TransactionHistory render:', { transactionCount: transactions.length, transactions });
+  const { transactions, deleteTransaction, refreshPrices } = usePortfolioContext();
+  const [showImporter, setShowImporter] = React.useState(false);
 
-  if (transactions.length === 0) {
+  const handleImportSuccess = () => {
+    refreshPrices(); // Refresh data after import
+  };
+
+  if (transactions.length === 0 && !showImporter) {
     return (
       <div className="text-center py-20 bg-[#1e222d] rounded border border-[#2a2e39] border-dashed">
-        <p className="text-[#787b86]">No transactions recorded yet.</p>
+        <p className="text-[#787b86] mb-4">No transactions recorded yet.</p>
+        <button
+          onClick={() => setShowImporter(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-[#2962ff] hover:bg-[#1e53e5] text-white font-medium rounded transition-colors"
+        >
+          <Upload className="w-4 h-4" />
+          Import Transactions
+        </button>
+        {showImporter && <TransactionImporter onClose={() => setShowImporter(false)} onImportSuccess={handleImportSuccess} />}
       </div>
     );
   }
@@ -26,7 +39,18 @@ export const TransactionHistory: React.FC = () => {
 
   try {
     return (
-      <div className="bg-[#1e222d] border border-[#2a2e39] rounded overflow-hidden">
+      <div className="bg-[#1e222d] border border-[#2a2e39] rounded overflow-hidden flex flex-col">
+        <div className="p-4 border-b border-[#2a2e39] flex justify-between items-center">
+          <h3 className="text-[#d1d4dc] font-medium">Transaction History</h3>
+          <button
+            onClick={() => setShowImporter(true)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-[#2a2e39] hover:bg-[#363a45] text-[#d1d4dc] text-xs font-medium rounded transition-colors"
+          >
+            <Upload className="w-3 h-3" />
+            Import CSV
+          </button>
+        </div>
+        {showImporter && <TransactionImporter onClose={() => setShowImporter(false)} onImportSuccess={handleImportSuccess} />}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
@@ -43,7 +67,7 @@ export const TransactionHistory: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-[#2a2e39]">
               {sortedTransactions.map((t) => {
-                const total = (t.shares || 0) * (t.price || 0) + (t.fee || 0);
+                const total = t.total ?? ((t.shares || 0) * (t.price || 0) + (t.fee || 0));
                 const isBuy = t.type === 'Buy';
 
                 const dateStr = new Date(t.date).toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');

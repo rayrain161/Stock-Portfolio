@@ -8,6 +8,7 @@ export interface Api {
   getPrice: (symbol: string) => Promise<any>;
   importHistory: (data: any[], overwrite?: boolean) => Promise<any>;
   clearHistory: () => Promise<any>;
+  importTransactions: (txns: Transaction[]) => Promise<any>;
 }
 
 const LOCAL_API_URL = 'http://localhost:3001/api';
@@ -57,6 +58,10 @@ const localApi: Api = {
   },
   clearHistory: async () => {
     console.warn('Clear history not supported in local mode');
+    return { success: false, error: 'Not supported locally' };
+  },
+  importTransactions: async (txns) => {
+    console.warn('Import transactions not supported in local mode');
     return { success: false, error: 'Not supported locally' };
   }
 };
@@ -142,6 +147,18 @@ const hybridApi: Api = {
       body: JSON.stringify({ op: 'clearHistory' }),
     });
     if (!res.ok) throw new Error('Failed to clear history in GAS');
+    return res.json();
+  },
+  importTransactions: async (txns) => {
+    const gasUrl = getGasUrl();
+    if (!gasUrl) throw new Error('GAS_URL_MISSING');
+
+    const res = await fetch(gasUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ op: 'importTransactions', transactions: txns }),
+    });
+    if (!res.ok) throw new Error('Failed to import transactions to GAS');
     return res.json();
   }
 };

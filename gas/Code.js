@@ -30,6 +30,8 @@ function doPost(e) {
         result = importHistoryData(data.historyItems, data.overwrite);
       } else if (op === 'clearHistory') {
         result = clearHistory();
+      } else if (op === 'importTransactions') {
+        result = importTransactions(data.transactions);
       } else {
         result = { error: 'Unknown operation' };
       }
@@ -256,6 +258,28 @@ function importHistoryData(items, overwrite) {
     // Batch append
     const lastRow = histSheet.getLastRow();
     histSheet.getRange(lastRow + 1, 1, rows.length, rows[0].length).setValues(rows);
+  }
+
+  return { success: true, count: rows.length };
+}
+
+function importTransactions(txns) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('Transactions');
+  if (!sheet) { setup(); sheet = ss.getSheetByName('Transactions'); }
+
+  if (!txns || !Array.isArray(txns)) return { error: 'Invalid data' };
+
+  // Columns: id, date, type, symbol, shares, price, fee, tax, total, note, broker, currency
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+  const rows = txns.map(txn => {
+    return headers.map(header => txn[header] || '');
+  });
+
+  if (rows.length > 0) {
+    const lastRow = sheet.getLastRow();
+    sheet.getRange(lastRow + 1, 1, rows.length, rows[0].length).setValues(rows);
   }
 
   return { success: true, count: rows.length };

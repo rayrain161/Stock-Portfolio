@@ -49,7 +49,7 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
     }, 30000); // 30 seconds
 
     return () => clearInterval(intervalId);
-  }, [apiKey]); // Re-run if apiKey changes, but also run initially
+  }, [apiKey, portfolio.holdings.length]); // Re-run if apiKey changes or holdings change
 
   const refreshPrices = async () => {
     const symbols = Array.from(new Set(portfolio.holdings.map(h => h.symbol)));

@@ -192,8 +192,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
       </div>
 
       {/* Summary Strip */}
-      <div className="bg-[#1e222d] border border-[#2a2e39] p-6 rounded flex items-center justify-between shadow-sm">
-        <div className="flex gap-12">
+      <div className="bg-[#1e222d] border border-[#2a2e39] p-4 lg:p-6 rounded flex flex-col lg:flex-row items-start lg:items-center justify-between shadow-sm gap-4 lg:gap-0">
+        <div className="flex flex-wrap gap-6 lg:gap-12 w-full lg:w-auto">
           <SummaryItem
             label={`Total Assets (${currencyLabel})`}
             value={`$${filteredStats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
@@ -216,17 +216,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
             <span className="text-lg font-bold font-mono tracking-tight text-[#d1d4dc]">{exchangeRate.toFixed(2)}</span>
           </div>
         </div>
-        <div className="flex gap-2">
-          {apiKey && (
-            <button
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="px-3 py-1.5 bg-[#2a2e39] hover:bg-[#363a45] text-[#d1d4dc] text-sm font-medium rounded transition-colors flex items-center gap-2 disabled:opacity-50"
-            >
-              <RefreshCw className={clsx("w-4 h-4", isRefreshing && "animate-spin")} />
-              {isRefreshing ? 'Updating...' : 'Refresh Prices'}
-            </button>
-          )}
+        <div className="flex gap-2 w-full lg:w-auto justify-end">
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="px-3 py-1.5 bg-[#2a2e39] hover:bg-[#363a45] text-[#d1d4dc] text-sm font-medium rounded transition-colors flex items-center gap-2 disabled:opacity-50"
+          >
+            <RefreshCw className={clsx("w-4 h-4", isRefreshing && "animate-spin")} />
+            {isRefreshing ? 'Updating...' : 'Refresh Prices'}
+          </button>
           {onNewTrade && (
             <button
               onClick={onNewTrade}

@@ -10,6 +10,69 @@ interface LayoutProps {
   onTabChange: (tab: 'dashboard' | 'holdings' | 'history' | 'analysis' | 'realized') => void;
 }
 
+const MarketStatus = () => {
+  const [status, setStatus] = React.useState<{ isOpen: boolean; label: string; color: string }>({
+    isOpen: false,
+    label: 'Loading...',
+    color: '#787b86'
+  });
+
+  React.useEffect(() => {
+    const checkMarketStatus = () => {
+      const now = new Date();
+
+      // Helper to get parts in timezone
+      const getParts = (timeZone: string) => {
+        const formatter = new Intl.DateTimeFormat('en-US', {
+          timeZone,
+          hour: 'numeric',
+          minute: 'numeric',
+          hour12: false,
+          weekday: 'short'
+        });
+        const parts = formatter.formatToParts(now);
+        const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0');
+        const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0');
+        const weekday = parts.find(p => p.type === 'weekday')?.value;
+        return { hour, minute, weekday };
+      };
+
+      // Check Taiwan Market (09:00 - 13:30, Mon-Fri)
+      const tw = getParts('Asia/Taipei');
+      const isTwWeekday = !['Sat', 'Sun'].includes(tw.weekday || '');
+      const twTime = tw.hour * 100 + tw.minute;
+      const isTwOpen = isTwWeekday && twTime >= 900 && twTime <= 1330;
+
+      // Check US Market (09:30 - 16:00, Mon-Fri)
+      const us = getParts('America/New_York');
+      const isUsWeekday = !['Sat', 'Sun'].includes(us.weekday || '');
+      const usTime = us.hour * 100 + us.minute;
+      const isUsOpen = isUsWeekday && usTime >= 930 && usTime <= 1600;
+
+      if (isTwOpen && isUsOpen) {
+        setStatus({ isOpen: true, label: 'Markets Open', color: '#00b498' });
+      } else if (isTwOpen) {
+        setStatus({ isOpen: true, label: 'TW Market Open', color: '#00b498' });
+      } else if (isUsOpen) {
+        setStatus({ isOpen: true, label: 'US Market Open', color: '#00b498' });
+      } else {
+        setStatus({ isOpen: false, label: 'Markets Closed', color: '#787b86' });
+      }
+    };
+
+    checkMarketStatus();
+    const interval = setInterval(checkMarketStatus, 60000); // Update every minute
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-[#2a2e39]/50 rounded border border-[#2a2e39]">
+      <div className={clsx("w-2 h-2 rounded-full", status.isOpen && "animate-pulse")} style={{ backgroundColor: status.color }}></div>
+      <span className="text-xs font-medium" style={{ color: status.color }}>{status.label}</span>
+    </div>
+  );
+};
+
 export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { apiKey, setApiKey } = usePortfolioContext();
@@ -93,10 +156,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
 
         {/* Right Icons - Fixed */}
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-[#2a2e39]/50 rounded border border-[#2a2e39]">
-            <div className="w-2 h-2 rounded-full bg-[#00b498] animate-pulse"></div>
-            <span className="text-xs font-medium text-[#00b498]">Market Open</span>
-          </div>
+          <MarketStatus />
           <button
             onClick={() => setIsSettingsOpen(true)}
             className="p-2 text-[#787b86] hover:text-[#d1d4dc] hover:bg-[#2a2e39] rounded transition-colors"

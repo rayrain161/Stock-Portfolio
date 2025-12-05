@@ -295,8 +295,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
                       }}
                       labelLine={false}
                     >
-                      {allocationData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      {allocationData.map((entry, index) => (
+                        <Cell key={`cell-${entry.name}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
                     <Tooltip

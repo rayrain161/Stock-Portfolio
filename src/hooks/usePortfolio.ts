@@ -90,6 +90,10 @@ export const usePortfolio = () => {
     setPrices((prev) => ({ ...prev, [symbol]: { current, previousClose } }));
   };
 
+  const updatePrices = (newPrices: Record<string, PriceInfo>) => {
+    setPrices((prev) => ({ ...prev, ...newPrices }));
+  };
+
   // Calculate holdings and realized gains using FIFO
   const { holdings: calculatedHoldings, realizedPositions, totalRealizedPL } = useMemo(() => {
     const holdingsMap: Record<string, {
@@ -265,6 +269,7 @@ export const usePortfolio = () => {
     deleteTransaction,
     clearAllTransactions,
     updatePrice,
+    updatePrices,
     holdings: calculatedHoldings,
     realizedPositions,
     stats,

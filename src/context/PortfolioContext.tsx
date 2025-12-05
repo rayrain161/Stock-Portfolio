@@ -80,7 +80,7 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
     return () => clearTimeout(timer);
   }, [refreshIndex, portfolio.holdings.length, apiKey]);
 
-  const fetchSinglePrice = async (symbol: string) => {
+  const fetchPriceData = async (symbol: string): Promise<{ current: number; previousClose?: number } | null> => {
     let current: number | null = null;
     let previousClose: number | undefined;
 
@@ -122,7 +122,15 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
 
     if (current !== null) {
-      portfolio.updatePrice(symbol, current, previousClose);
+      return { current, previousClose };
+    }
+    return null;
+  };
+
+  const fetchSinglePrice = async (symbol: string) => {
+    const data = await fetchPriceData(symbol);
+    if (data) {
+      portfolio.updatePrice(symbol, data.current, data.previousClose);
     } else {
       console.warn(`Failed to fetch price for ${symbol}`);
     }
@@ -139,7 +147,23 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
       console.log(`Exchange rate updated: 1 USD = ${rateData.current} TWD`);
     }
 
-    await Promise.all(symbols.map(symbol => fetchSinglePrice(symbol)));
+    // Batch fetch all prices
+    const results = await Promise.all(symbols.map(async (symbol) => {
+      const data = await fetchPriceData(symbol);
+      return { symbol, data };
+    }));
+
+    // Batch update state
+    const newPrices: Record<string, { current: number; previousClose?: number }> = {};
+    results.forEach(({ symbol, data }) => {
+      if (data) {
+        newPrices[symbol] = data;
+      }
+    });
+
+    if (Object.keys(newPrices).length > 0) {
+      portfolio.updatePrices(newPrices);
+    }
   };
 
   return (

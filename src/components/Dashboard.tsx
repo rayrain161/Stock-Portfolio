@@ -22,8 +22,7 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
-  const { stats, holdings, refreshPrices, apiKey, exchangeRate } = usePortfolioContext();
-  const [showSettings, setShowSettings] = useState(false);
+  const { holdings, refreshPrices, exchangeRate } = usePortfolioContext();
   const [gasUrlInput, setGasUrlInput] = useState('');
 
   // Check if we need GAS URL

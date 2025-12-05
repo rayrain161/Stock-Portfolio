@@ -145,15 +145,40 @@ export const usePortfolio = () => {
         const sellPricePerShare = price;
         const sellFeePerShare = fee / shares;
 
+        // Determine Cost Basis Method
+        // FubonTW / FubonSub -> Average Cost
+        // Firstrade -> FIFO
+        const useAverageCost = ['FubonTW', 'FubonSub'].includes(txn.broker);
+        let avgUnitCost = 0;
+
+        if (useAverageCost && holding.totalShares > 0) {
+          avgUnitCost = holding.totalCost / holding.totalShares;
+        }
+
         while (sharesToSell > 0 && holding.lots.length > 0) {
           const lot = holding.lots[0];
           const sharesToTake = Math.min(sharesToSell, lot.shares);
 
-          const acquisitionPrice = lot.price;
-          const acquisitionFeeForPortion = (lot.fee / lot.shares) * sharesToTake;
-          const saleFeeForPortion = sellFeePerShare * sharesToTake;
+          // Calculate Cost Basis
+          let adjustedCost = 0;
+          let acquisitionPrice = 0;
+          let acquisitionFeeForPortion = 0;
 
-          const adjustedCost = (acquisitionPrice * sharesToTake) + acquisitionFeeForPortion;
+          if (useAverageCost) {
+            // Average Cost Method
+            // Cost is proportional to the lots being removed, using the current average unit cost
+            // Note: avgUnitCost already includes fees significantly since totalCost includes fees
+            adjustedCost = avgUnitCost * sharesToTake;
+            acquisitionPrice = avgUnitCost; // Effective price per share
+            acquisitionFeeForPortion = 0; // Fees are baked into the average cost
+          } else {
+            // FIFO Method
+            acquisitionPrice = lot.price;
+            acquisitionFeeForPortion = (lot.fee / lot.shares) * sharesToTake;
+            adjustedCost = (acquisitionPrice * sharesToTake) + acquisitionFeeForPortion;
+          }
+
+          const saleFeeForPortion = sellFeePerShare * sharesToTake;
           const salesProceeds = (sellPricePerShare * sharesToTake) - saleFeeForPortion;
           const netGainLoss = salesProceeds - adjustedCost;
 
@@ -165,7 +190,7 @@ export const usePortfolio = () => {
             symbol: txn.symbol,
             broker: txn.broker,
             quantity: sharesToTake,
-            dateAcquired: lot.date,
+            dateAcquired: lot.date, // Still tracking "which" shares based on FIFO for age
             dateSold: txn.date,
             daysHeld,
             acquisitionPrice,
@@ -175,7 +200,7 @@ export const usePortfolio = () => {
             adjustedCost,
             salesProceeds,
             netGainLoss,
-            gainLossPercent: (netGainLoss / adjustedCost) * 100,
+            gainLossPercent: adjustedCost > 0 ? (netGainLoss / adjustedCost) * 100 : 0,
             isShortTerm: daysHeld < 365,
           });
 

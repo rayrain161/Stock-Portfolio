@@ -68,7 +68,7 @@ const localApi: Api = {
     }
     return null;
   },
-  importHistory: async (data) => {
+  importHistory: async (_data) => {
     console.warn('Import history not supported in local mode');
     return { success: false, error: 'Not supported locally' };
   },
@@ -76,7 +76,7 @@ const localApi: Api = {
     console.warn('Clear history not supported in local mode');
     return { success: false, error: 'Not supported locally' };
   },
-  importTransactions: async (txns) => {
+  importTransactions: async (_txns) => {
     console.warn('Import transactions not supported in local mode');
     return { success: false, error: 'Not supported locally' };
   }

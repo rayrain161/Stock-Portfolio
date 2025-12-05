@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { api } from '../services/api';
-import { AlertCircle, Check, X, ArrowRight } from 'lucide-react';
+import { AlertCircle, X, ArrowRight } from 'lucide-react';
 
 export const HistoryImporter: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [csvContent, setCsvContent] = useState('');

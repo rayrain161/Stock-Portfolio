@@ -17,81 +17,83 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
   return (
     <div className="min-h-screen bg-[#131722] text-[#d1d4dc] font-sans selection:bg-[#2962ff] selection:text-white">
       {/* Header */}
-      <header className="h-14 border-b border-[#2a2e39] bg-[#1e222d] flex items-center justify-between px-4 sticky top-0 z-40">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-[#2962ff] rounded flex items-center justify-center text-white font-bold text-lg">
-              SF
-            </div>
-            <span className="font-bold text-lg tracking-tight text-[#d1d4dc]">StockFolio</span>
+      <header className="h-14 border-b border-[#2a2e39] bg-[#1e222d] flex items-center justify-between px-4 sticky top-0 z-40 gap-4">
+        {/* Logo - Fixed */}
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="w-8 h-8 bg-[#2962ff] rounded flex items-center justify-center text-white font-bold text-lg">
+            SF
           </div>
-
-          <nav className="flex items-center gap-1">
-            <button
-              onClick={() => onTabChange('dashboard')}
-              className={clsx(
-                "flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors",
-                activeTab === 'dashboard'
-                  ? "text-[#d1d4dc] bg-[#2a2e39]"
-                  : "text-[#787b86] hover:text-[#d1d4dc] hover:bg-[#2a2e39]/50"
-              )}
-            >
-              <LayoutDashboard className="w-4 h-4" />
-              Dashboard
-            </button>
-            <button
-              onClick={() => onTabChange('holdings')}
-              className={clsx(
-                "flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors",
-                activeTab === 'holdings'
-                  ? "text-[#d1d4dc] bg-[#2a2e39]"
-                  : "text-[#787b86] hover:text-[#d1d4dc] hover:bg-[#2a2e39]/50"
-              )}
-            >
-              <PieChart className="w-4 h-4" />
-              Holdings
-            </button>
-            <button
-              onClick={() => onTabChange('history')}
-              className={clsx(
-                "flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors",
-                activeTab === 'history'
-                  ? "text-[#d1d4dc] bg-[#2a2e39]"
-                  : "text-[#787b86] hover:text-[#d1d4dc] hover:bg-[#2a2e39]/50"
-              )}
-            >
-              <ArrowLeftRight className="w-4 h-4" />
-              History
-            </button>
-            <button
-              onClick={() => onTabChange('analysis')}
-              className={clsx(
-                "flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors",
-                activeTab === 'analysis'
-                  ? "text-[#d1d4dc] bg-[#2a2e39]"
-                  : "text-[#787b86] hover:text-[#d1d4dc] hover:bg-[#2a2e39]/50"
-              )}
-            >
-              <TrendingUp className="w-4 h-4" />
-              Analysis
-            </button>
-            <button
-              onClick={() => onTabChange('realized')}
-              className={clsx(
-                "flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors",
-                activeTab === 'realized'
-                  ? "text-[#d1d4dc] bg-[#2a2e39]"
-                  : "text-[#787b86] hover:text-[#d1d4dc] hover:bg-[#2a2e39]/50"
-              )}
-            >
-              <TrendingUp className="w-4 h-4" />
-              Realized
-            </button>
-          </nav>
+          <span className="font-bold text-lg tracking-tight text-[#d1d4dc] hidden sm:inline">StockFolio</span>
+          <span className="font-bold text-lg tracking-tight text-[#d1d4dc] sm:hidden">SF</span>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 px-3 py-1 bg-[#2a2e39]/50 rounded border border-[#2a2e39]">
+        {/* Nav - Scrollable */}
+        <nav className="flex items-center gap-1 flex-1 overflow-x-auto min-w-0 px-2 no-scrollbar mask-linear-fade">
+          <button
+            onClick={() => onTabChange('dashboard')}
+            className={clsx(
+              "flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors whitespace-nowrap shrink-0",
+              activeTab === 'dashboard'
+                ? "text-[#d1d4dc] bg-[#2a2e39]"
+                : "text-[#787b86] hover:text-[#d1d4dc] hover:bg-[#2a2e39]/50"
+            )}
+          >
+            <LayoutDashboard className="w-4 h-4" />
+            Dashboard
+          </button>
+          <button
+            onClick={() => onTabChange('holdings')}
+            className={clsx(
+              "flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors whitespace-nowrap shrink-0",
+              activeTab === 'holdings'
+                ? "text-[#d1d4dc] bg-[#2a2e39]"
+                : "text-[#787b86] hover:text-[#d1d4dc] hover:bg-[#2a2e39]/50"
+            )}
+          >
+            <PieChart className="w-4 h-4" />
+            Holdings
+          </button>
+          <button
+            onClick={() => onTabChange('history')}
+            className={clsx(
+              "flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors whitespace-nowrap shrink-0",
+              activeTab === 'history'
+                ? "text-[#d1d4dc] bg-[#2a2e39]"
+                : "text-[#787b86] hover:text-[#d1d4dc] hover:bg-[#2a2e39]/50"
+            )}
+          >
+            <ArrowLeftRight className="w-4 h-4" />
+            History
+          </button>
+          <button
+            onClick={() => onTabChange('analysis')}
+            className={clsx(
+              "flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors whitespace-nowrap shrink-0",
+              activeTab === 'analysis'
+                ? "text-[#d1d4dc] bg-[#2a2e39]"
+                : "text-[#787b86] hover:text-[#d1d4dc] hover:bg-[#2a2e39]/50"
+            )}
+          >
+            <TrendingUp className="w-4 h-4" />
+            Analysis
+          </button>
+          <button
+            onClick={() => onTabChange('realized')}
+            className={clsx(
+              "flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors whitespace-nowrap shrink-0",
+              activeTab === 'realized'
+                ? "text-[#d1d4dc] bg-[#2a2e39]"
+                : "text-[#787b86] hover:text-[#d1d4dc] hover:bg-[#2a2e39]/50"
+            )}
+          >
+            <TrendingUp className="w-4 h-4" />
+            Realized
+          </button>
+        </nav>
+
+        {/* Right Icons - Fixed */}
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-[#2a2e39]/50 rounded border border-[#2a2e39]">
             <div className="w-2 h-2 rounded-full bg-[#00b498] animate-pulse"></div>
             <span className="text-xs font-medium text-[#00b498]">Market Open</span>
           </div>

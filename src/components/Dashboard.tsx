@@ -122,6 +122,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
     };
   }, [filteredHoldings, exchangeRate, brokerFilter]);
 
+  const [enableAnimation, setEnableAnimation] = useState(true);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setEnableAnimation(false);
+    }, 2000); // Disable animation after initial render
+    return () => clearTimeout(timer);
+  }, []);
+
   const allocationData = React.useMemo(() => {
     if (allocationType === 'symbol') {
       return filteredHoldings.map(h => {
@@ -294,6 +303,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNewTrade }) => {
                         return percent && percent > 0.05 ? entry.name : '';
                       }}
                       labelLine={false}
+                      isAnimationActive={enableAnimation}
                     >
                       {allocationData.map((entry, index) => (
                         <Cell key={`cell-${entry.name}`} fill={COLORS[index % COLORS.length]} />

@@ -79,15 +79,8 @@ export const usePortfolio = () => {
 
   const clearAllTransactions = async () => {
     try {
-      const response = await fetch(API_URL, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        setTransactions([]);
-      } else {
-        console.error('Failed to clear transactions');
-      }
+      await api.clearTransactions();
+      setTransactions([]);
     } catch (error) {
       console.error('Error clearing transactions:', error);
     }
@@ -197,7 +190,7 @@ export const usePortfolio = () => {
     });
 
     const calculatedHoldings: Holding[] = Object.values(holdingsMap)
-      .filter((h) => h.totalShares > 0)
+      .filter((h) => h.totalShares > 0.000001)
       .map((h) => {
         const priceInfo = prices[h.symbol];
         const currentPrice = priceInfo?.current;

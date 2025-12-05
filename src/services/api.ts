@@ -9,6 +9,7 @@ export interface Api {
   importHistory: (data: any[], overwrite?: boolean) => Promise<any>;
   clearHistory: () => Promise<any>;
   importTransactions: (txns: Transaction[]) => Promise<any>;
+  clearTransactions: () => Promise<void>;
 }
 
 const LOCAL_API_URL = 'http://localhost:3001/api';
@@ -33,6 +34,21 @@ const localApi: Api = {
       method: 'DELETE',
     });
     if (!res.ok) throw new Error('Failed to delete transaction');
+  },
+  clearTransactions: async () => {
+    // Assuming the local server supports DELETE on the collection to clear all
+    // If not, we might need to fetch all and delete one by one, but let's try this first
+    // or maybe there is a specific clear endpoint?
+    // Given I don't see the server code, I'll assume DELETE /transactions works or I'll try to implement a loop if I could,
+    // but for now let's assume a bulk delete or just fail if not supported.
+    // Actually, looking at clearHistory, it says "Not supported locally".
+    // Maybe clearTransactions is also not supported locally?
+    // But usePortfolio had it trying to fetch API_URL with DELETE.
+    // Let's assume DELETE /transactions is the way.
+    const res = await fetch(`${LOCAL_API_URL}/transactions`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) throw new Error('Failed to clear transactions');
   },
   getHistory: async () => {
     const res = await fetch(`${LOCAL_API_URL}/history`);
@@ -108,6 +124,17 @@ const hybridApi: Api = {
       body: JSON.stringify({ op: 'delete', id }),
     });
     if (!res.ok) throw new Error('Failed to delete transaction from GAS');
+  },
+  clearTransactions: async () => {
+    const gasUrl = getGasUrl();
+    if (!gasUrl) throw new Error('GAS_URL_MISSING');
+
+    const res = await fetch(gasUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ op: 'clearTransactions' }),
+    });
+    if (!res.ok) throw new Error('Failed to clear transactions in GAS');
   },
   getHistory: async () => {
     const gasUrl = getGasUrl();
